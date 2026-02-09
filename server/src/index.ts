@@ -3,7 +3,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { pool } from "./db";
 import bcrypt from "bcrypt";
-import { pool } from "./db";
 import { signUser, verifyToken } from "./auth";
 
 dotenv.config();

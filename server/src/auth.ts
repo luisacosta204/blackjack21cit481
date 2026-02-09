@@ -8,12 +8,16 @@ if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not set in server/.env");
 }
 
-export type JwtUser = { id: number; username: string; email: string };
+export type JwtUser = {
+  id: number;
+  username: string;
+  email: string;
+};
 
-export function signUser(user: JwtUser) {
+export function signUser(user: JwtUser): string {
   return jwt.sign(user, JWT_SECRET, { expiresIn: "7d" });
 }
 
 export function verifyToken(token: string): JwtUser {
-  return jwt.verify(token, JWT_SECRET) as JwtUser;
+  return jwt.verify(token, JWT_SECRET) as unknown as JwtUser;
 }
