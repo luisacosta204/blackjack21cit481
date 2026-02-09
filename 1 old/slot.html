@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Classic Slots</title>
+
+    <!-- Global casino theme -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/header-user.css">
+
+    <!-- Page-specific -->
+    <link rel="stylesheet" href="slots/slot.css?v=dev1">
+    <script src="slots/slot.js?v=dev1" defer></script>
+</head>
+<body>
+    <header class="header">
+        <div class="left user-info">
+            <img id="headerAvatar" src="assets/avatars/1.png" alt="User avatar">
+            <span id="headerUsername" class="username"></span>
+        </div>
+
+        <div class="right cluster">
+            <button id="backButton" class="back-button btn-secondary btn">⮐ Back to Home</button>
+            <span class="badge" id="bankBadge" title="Your chip balance"></span>
+        </div>
+    </header>
+
+    <main class="container stack">
+        <section class="panel">
+            <h2 class="panel-header">Classic Slots</h2>
+            <p class="panel-subtle">Three reels, single payline. Line up matching symbols to win. 7s and 💎 pay best.</p>
+
+            <!-- Reels -->
+            <div class="slot-wrap">
+                <div class="reels">
+                    <div class="reel" id="reel1" aria-label="Reel 1"></div>
+                    <div class="reel" id="reel2" aria-label="Reel 2"></div>
+                    <div class="reel" id="reel3" aria-label="Reel 3"></div>
+                </div>
+                <div class="payline-marker" aria-hidden="true"></div>
+            </div>
+
+            <div class="toast info mt-6" id="status" aria-live="polite">Set your bet, then press Spin.</div>
+        </section>
+
+        <!-- Keep two columns; put buttons under Betting (left).
+             Right column keeps Symbol Set + Paytable in the same place. -->
+        <section class="grid cols-2">
+            <!-- LEFT: Betting + ACTION BUTTONS -->
+            <div class="panel">
+                <h3 class="panel-header">Betting</h3>
+                <p class="panel-subtle">Choose your wager per spin.</p>
+
+                <div class="cluster">
+                    <button class="chip-btn chip-5" data-chip="5" title="+5">+5</button>
+                    <button class="chip-btn chip-25" data-chip="25" title="+25">+25</button>
+                    <button class="chip-btn chip-100" data-chip="100" title="+100">+100</button>
+                    <button class="btn-ghost btn" id="clearBetBtn" title="Clear bet">Clear</button>
+                </div>
+
+                <div class="bet-line mt-4">
+                    <span class="muted">Bet per Spin:</span>
+                    <strong id="betAmount">0</strong>
+                </div>
+
+                <!-- Moved here from the right column -->
+                <div class="cluster mt-6">
+                    <button class="btn" id="spinBtn">Spin</button>
+                    <button class="btn-secondary btn" id="maxBetBtn">Max Bet</button>
+                    <button class="btn-danger btn" id="resetBankBtn">Reset Bank</button>
+                </div>
+            </div>
+
+            <!-- RIGHT: Symbol Set + Paytable (unchanged position) -->
+            <div class="panel">
+                <h3 class="panel-header">Actions</h3>
+                <p class="panel-subtle">Spin the reels!</p>
+
+                <div class="cluster mt-2">
+                    <label for="symbolPackSelect" class="muted">Symbol Set:</label>
+                    <select id="symbolPackSelect" class="select">
+                        <option value="emoji">Classic Emoji</option>
+                        <option value="neon">Custom Pack</option>
+                    </select>
+                </div>
+
+                <div class="mt-3 panel-subtle">
+                    <span class="muted">Paytable (3 in a row):</span>
+                    <ul class="paytable" id="paytable"><!-- JS renders this --></ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">© Classic Slots</footer>
+
+    <script>
+        // Small header helper (mirrors your Blackjack page)
+        (function () {
+            const avatar = document.getElementById('headerAvatar');
+            const usernameEl = document.getElementById('headerUsername');
+            const storedName = localStorage.getItem('bj21.username');
+            const storedAvatar = localStorage.getItem('bj21.avatar');
+            const username = storedName || `Guest_${Math.floor(1000 + Math.random() * 9000)}`;
+            usernameEl.textContent = username;
+            localStorage.setItem('bj21.username', username);
+            if (storedAvatar) avatar.src = storedAvatar;
+
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'bj21.avatar' && e.newValue) { avatar.src = e.newValue; }
+            });
+        })();
+    </script>
+</body>
+</html>

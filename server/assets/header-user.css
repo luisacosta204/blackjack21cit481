@@ -1,0 +1,23 @@
+/* header-user.css */
+/* Styles for user avatar + name display in top-left */
+
+.header .user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header .user-info img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 6px rgba(0,0,0,0.4);
+  border: 2px solid rgba(255,255,255,0.15);
+}
+
+.header .username {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--ink);
+}

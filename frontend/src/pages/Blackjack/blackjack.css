@@ -1,0 +1,370 @@
+/* ---- Blackjack table + controls (compact + slightly modernized) ----
+   Goals:
+   - Playable without scrolling on most laptop/desktop viewports
+   - Cards scale down on short screens
+   - Controls stay visible (sticky on very short screens)
+*/
+
+/* === Base viewport === */
+html, body {
+  height: 100%;
+}
+
+/* =========================
+   NEW: Layout for bj-layout
+   ========================= */
+
+main.container.bj-layout {
+  /* Use available viewport space, but allow scroll if truly necessary */
+  min-height: calc(100svh - var(--header-h, 72px));
+  display: grid;
+  gap: 14px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+/* Fallback if svh not supported */
+@supports not (height: 100svh) {
+  main.container.bj-layout {
+    min-height: calc(100vh - var(--header-h, 72px));
+  }
+}
+
+/* Table block */
+.bj-table .table-wrap {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Title row: description + metrics */
+.bj-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.bj-metrics {
+  font-size: 0.95rem;
+  opacity: 0.92;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  white-space: nowrap;
+}
+
+/* Status sits tighter */
+.bj-status {
+  margin-top: 12px;
+}
+
+/* Controls row */
+.bj-controls {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 900px) {
+  .bj-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================
+   Existing table/card styles
+   ========================= */
+
+.row {
+  display: flex;
+  justify-content: center;
+}
+
+.hand {
+  width: 100%;
+  max-width: 860px;
+}
+
+.label {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  margin-bottom: 6px;
+}
+
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+
+  gap: 6px;
+
+  /* Smaller baseline than before (helps laptop height) */
+  min-height: clamp(64px, 9vh, 110px);
+}
+
+.score {
+  margin-top: 6px;
+  text-align: center;
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+/* Cards are images (deck themes) */
+.cards img {
+  width: clamp(44px, 5vw, 68px);
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+/* =========================
+   Betting + Actions UI
+   ========================= */
+
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.bet-line {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.select {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--text, #fff);
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.chip-btn {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  padding: 9px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chip-btn:hover {
+  filter: brightness(1.07);
+}
+
+.chip-5 { box-shadow: inset 0 0 0 2px rgba(0, 255, 170, 0.25); }
+.chip-25 { box-shadow: inset 0 0 0 2px rgba(255, 204, 0, 0.25); }
+.chip-100 { box-shadow: inset 0 0 0 2px rgba(255, 80, 80, 0.25); }
+
+/* Slightly nicer action buttons sizing on this page */
+.bj-actions .btn {
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+/* =========================
+   Toast/status
+   ========================= */
+
+.toast {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+}
+
+.toast.info { border-color: rgba(120, 190, 255, 0.35); }
+.toast.success { border-color: rgba(70, 255, 170, 0.30); }
+.toast.warn { border-color: rgba(255, 210, 70, 0.35); }
+.toast.danger { border-color: rgba(255, 90, 90, 0.35); }
+
+/* =========================
+   Header right cluster refinements
+   ========================= */
+
+.header .right.cluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  min-width: 110px;
+}
+
+/* =========================
+   Short viewport tuning + sticky controls
+   ========================= */
+
+/* Tighten vertical rhythm on shorter screens */
+@media (max-height: 820px) {
+  main.container.bj-layout {
+    gap: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .panel-header {
+    margin-bottom: 6px;
+  }
+
+  .panel-subtle {
+    margin-top: 4px;
+    margin-bottom: 8px;
+  }
+
+  .toast {
+    padding: 10px 12px;
+  }
+
+  .cards img {
+    width: clamp(40px, 4.8vw, 62px);
+  }
+}
+
+/* Very short screens: keep controls always reachable */
+@media (max-height: 740px) {
+  .bj-controls {
+    position: sticky;
+    bottom: 10px;
+    z-index: 10;
+  }
+
+  .bj-controls .panel {
+    backdrop-filter: blur(10px);
+  }
+
+  /* Shrink cards slightly more */
+  .cards {
+    min-height: 60px;
+  }
+
+  .cards img {
+    width: clamp(38px, 4.6vw, 58px);
+  }
+}
+
+/* Utility spacing */
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 14px; }
+.mt-6 { margin-top: 18px; }
+.muted { opacity: 0.75; }
+
+
+/* =========================
+   FIXES: header overlap + no-scroll controls (2/7/26)
+   ========================= */
+
+/* 1) Header overlap safety: reserve space even if header is fixed/sticky
+   Adjust 86px -> 96px if your header is taller. */
+main.container.bj-layout {
+  padding-top: calc(12px + 86px);
+}
+
+/* If your header is NOT fixed, this won’t hurt much.
+   If it IS fixed, this prevents overlap. */
+@media (max-width: 900px) {
+  main.container.bj-layout {
+    padding-top: calc(10px + 92px);
+  }
+}
+
+/* 2) Make layout behave like a "game screen": table gets a cap, controls stay visible */
+main.container.bj-layout {
+  /* Use height instead of min-height to prevent weird stretch at extreme zoom */
+  height: calc(100svh - 0px);
+  overflow: hidden; /* keeps internal scrolling predictable */
+}
+
+/* Allow the whole page to scroll ONLY if absolutely necessary */
+@supports not (height: 100svh) {
+  main.container.bj-layout {
+    height: 100vh;
+  }
+}
+
+/* Cap the table area so controls fit without scrolling */
+.bj-table {
+  max-height: 58svh;
+  overflow: hidden;
+}
+
+/* If table content exceeds cap, scroll INSIDE the table panel */
+.bj-table .table-wrap {
+  max-height: 36svh;
+  overflow: auto;
+}
+
+/* Keep status visible but compact */
+.bj-status {
+  margin-top: 10px;
+}
+
+/* 3) More aggressive compaction on shorter screens */
+@media (max-height: 820px) {
+  .bj-table {
+    max-height: 54svh;
+  }
+
+  .bj-table .table-wrap {
+    max-height: 32svh;
+  }
+
+  .cards {
+    min-height: 56px;
+  }
+
+  .cards img {
+    width: clamp(36px, 4.5vw, 58px);
+  }
+
+  .bj-metrics {
+    font-size: 0.9rem;
+    padding: 6px 8px;
+  }
+}
+
+/* 4) Very short screens: keep controls always reachable */
+@media (max-height: 740px) {
+  .bj-table {
+    max-height: 50svh;
+  }
+
+  .bj-table .table-wrap {
+    max-height: 28svh;
+  }
+
+  .bj-controls {
+    position: sticky;
+    bottom: 10px;
+    z-index: 10;
+  }
+}
+
+/* 5) Prevent flex/grid children from forcing huge heights */
+.bj-table, .bj-controls {
+  min-height: 0;
+}

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blackjack 21 — Home</title>
+    <meta name="description" content="Blackjack 21 home page" />
+    <!-- Fonts & Global Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css" />
+    <link rel="stylesheet" href="assets/header-user.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav container">
+            <div class="left user-info">
+                <img id="headerAvatar" src="assets/avatars/1.png" alt="User avatar">
+                <span id="headerUsername" class="username"></span>
+            </div>
+            <div class="right">
+                <a href="profile.html" class="btn btn-secondary">Profile</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container stack" style="text-align:center; min-height:80vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <h2 class="panel-header">Welcome to the Casino Lobby</h2>
+        <p class="panel-subtle">Choose a game mode or view your stats below.</p>
+
+        <div class="grid cols-2" style="max-width:600px; margin-top:2rem;">
+            <a href="blackjack.html" class="btn">Play Blackjack</a>
+            <a href="#" class="btn btn-secondary disabled" style="cursor:not-allowed; opacity:.5;">Coming Soon</a>
+        </div>
+
+        <div class="stack mt-8" style="max-width:400px;">
+            <a href="leaderboard.html" class="btn btn-ghost">View Leaderboards</a>
+            <a href="profile.html" class="btn btn-ghost">View Profile</a>
+        </div>
+    </main>
+
+    <footer class="footer container" style="text-align:center;">
+        <p>© 2025 Blackjack 21. All rights reserved.</p>
+    </footer>
+
+    <script>
+      (function () {
+        const avatar = document.getElementById('headerAvatar');
+        const usernameEl = document.getElementById('headerUsername');
+        const storedName = localStorage.getItem('bj21.username');
+        const storedAvatar = localStorage.getItem('bj21.avatar');
+        const username = storedName || `Guest_${Math.floor(1000 + Math.random() * 9000)}`;
+        usernameEl.textContent = username;
+        localStorage.setItem('bj21.username', username);
+        if (storedAvatar) avatar.src = storedAvatar;
+        window.addEventListener('storage', (e) => {
+          if (e.key === 'bj21.avatar' && e.newValue) { avatar.src = e.newValue; }
+        });
+      })();
+    </script>
+</body>
+</html>

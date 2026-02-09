@@ -1,0 +1,413 @@
+/*
+  Blackjack 21 — Global Stylesheet
+  Reuse across pages to keep a consistent casino/blackjack vibe.
+  ------------------------------------------------------------------
+  Usage:
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/style.css">
+*/
+
+/* =Root Theme Tokens ------------------------------------------------------ */
+:root {
+  /* Color palette */
+  --bg: #0a0f0d;          /* deep table room */
+  --felt: #0f3d2e;        /* felt green */
+  --felt-2: #115f45;      /* lighter felt gradient */
+  --ink: #e7f6ef;         /* primary text on dark */
+  --muted: #9fd6bf;       /* secondary text */
+  --card: #ffffff;        /* card face */
+  --accent: #e2c044;      /* gold accent */
+  --accent-ink: #1b1b1b;  /* ink on gold */
+  --danger: #ff6b6b;      /* errors */
+  --border: rgba(255,255,255,.08);
+  --border-strong: rgba(255,255,255,.2);
+
+  /* Shadows & radii */
+  --shadow-lg: 0 10px 30px rgba(0,0,0,.35);
+  --shadow-md: 0 6px 14px rgba(0,0,0,.25);
+  --radius: 16px;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Typography */
+  --font-sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  --fs-12: 12px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-18: 18px;
+  --fs-24: 24px;
+  --fs-28: 28px;
+}
+
+/* =Base / Reset ----------------------------------------------------------- */
+* { box-sizing: border-box; }
+*::before,*::after { box-sizing: inherit; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: radial-gradient(1200px 800px at 20% 20%, var(--felt-2), var(--bg));
+}
+img, svg { display: block; max-width: 100%; }
+button { font: inherit; }
+a { color: inherit; }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-float { animation: float 6s ease-in-out infinite; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* =Layout Helpers --------------------------------------------------------- */
+.container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 var(--space-6); }
+.stack { display: grid; gap: var(--space-6); }
+.cluster { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.grid { display: grid; gap: var(--space-6); }
+
+/***** Responsive grid presets *****/
+.grid.cols-2 { grid-template-columns: 1fr 1fr; }
+.grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 880px) {
+  .grid.cols-2, .grid.cols-3 { grid-template-columns: 1fr; }
+}
+
+/* =Panels & Surfaces ------------------------------------------------------ */
+.panel {
+  background: rgba(7,10,9,.7);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-lg);
+}
+.panel-header { font-size: var(--fs-24); margin: 0 0 var(--space-2); }
+.panel-subtle { color: var(--muted); margin: 0 0 var(--space-6); }
+
+/* Brand / hero surface for left side on login */
+.brand-panel {
+  position: relative; overflow: hidden; border-radius: var(--radius);
+  background: linear-gradient(145deg, rgba(17,95,69,.85), rgba(10,15,13,.85));
+  box-shadow: var(--shadow-lg);
+}
+.brand-grid {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: radial-gradient(60% 60% at 50% 40%, black, transparent);
+  pointer-events: none;
+}
+.logo { display: flex; align-items: center; gap: var(--space-3); }
+.logo-title { margin: 0; font-size: var(--fs-28); letter-spacing: .5px; }
+.logo-sub { color: var(--muted); margin-top: 6px; }
+.chip {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: linear-gradient(135deg,#ffd166,#cfa83d);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,.4), inset 0 -2px 6px rgba(0,0,0,.2), 0 2px 10px rgba(0,0,0,.25);
+  display: grid; place-items: center; color: #1a1a1a; font-weight: 700;
+}
+
+/* =Buttons --------------------------------------------------------------- */
+.btn { 
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  font-weight: 700; font-size: var(--fs-16); cursor: pointer; text-decoration: none;
+  padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(0,0,0,.2);
+  background: linear-gradient(180deg, #f0d77a, #caa93b); color: var(--accent-ink);
+  box-shadow: var(--shadow-md); transition: transform .05s ease, filter .15s ease;
+}
+.btn:hover { filter: brightness(1.05); }
+.btn:active { transform: translateY(1px); }
+
+.btn-secondary {
+  background: rgba(255,255,255,.1); color: var(--ink);
+  border: 1px solid var(--border-strong); box-shadow: none;
+}
+.btn-ghost {
+  background: transparent; border: 1px solid var(--border); color: var(--ink);
+}
+.btn-danger {
+  background: linear-gradient(180deg, #ff9a9a, #ff6b6b); color: #1b1b1b;
+}
+
+/* =Form Controls ---------------------------------------------------------- */
+.form { display: grid; gap: var(--space-4); }
+.field { display: grid; gap: var(--space-2); }
+label { font-weight: 600; font-size: var(--fs-14); }
+.input-wrap {
+  display: flex; align-items: center; gap: var(--space-2);
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.input-wrap:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.input-wrap input, .input-wrap select, .input-wrap textarea {
+  flex: 1; border: 0; outline: none; background: transparent; color: var(--ink); font-size: var(--fs-16);
+}
+.input-wrap button.icon { border: 0; background: transparent; cursor: pointer; padding: 6px; border-radius: 8px; }
+.input-wrap button.icon:focus { outline: 2px solid var(--accent); }
+
+.checkbox { display: flex; align-items: center; gap: 10px; }
+.checkbox input { width: 18px; height: 18px; }
+
+.error {
+  display: none; font-size: var(--fs-14);
+  background: rgba(255, 59, 48, .12);
+  color: #ffd7d7;
+  border: 1px solid rgba(255,59,48,.35);
+  padding: 10px 12px; border-radius: 12px;
+}
+
+.mutelink { color: var(--muted); text-decoration: none; font-weight: 600; }
+.mutelink:hover { text-decoration: underline; }
+
+/* =Cards (playing cards visual) ------------------------------------------ */
+.card-fan { position: relative; width: 420px; height: 420px; }
+.card {
+  position: absolute; width: 180px; height: 260px; border-radius: 16px;
+  background: var(--card); color: #111; box-shadow: var(--shadow-lg);
+  display: grid; grid-template-rows: auto 1fr auto; padding: 14px;
+}
+.card .pip { font-size: 28px; }
+.card .pip.red { color: #d22525; }
+.card .corner { align-self: start; }
+.card .center { display: grid; place-items: center; font-size: 72px; }
+.card .bottom { align-self: end; justify-self: end; transform: rotate(180deg); }
+
+/* Utility positions for demo fanning (optional) */
+.card.is-1 { left: 40px; top: 60px; transform: rotate(-8deg); }
+.card.is-2 { left: 120px; top: 120px; transform: rotate(6deg); }
+.card.is-3 { left: 200px; top: 180px; transform: rotate(18deg); }
+
+/* =Page-specific Helpers -------------------------------------------------- */
+.login-shell { width: 100%; max-width: 980px; display: grid; grid-template-columns: 1.15fr 1fr; gap: var(--space-6); align-items: stretch; }
+@media (max-width: 880px) { .login-shell { grid-template-columns: 1fr; } }
+
+/* =Tables (for leaderboards, history) ------------------------------------ */
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: left; }
+.table th { color: var(--muted); font-weight: 600; }
+.table tr:hover { background: rgba(255,255,255,.04); }
+
+/* =Header / Nav ----------------------------------------------------------- */
+.header {
+  position: sticky; top: 0; z-index: 20;
+  backdrop-filter: blur(8px);
+  background: linear-gradient(180deg, rgba(10,15,13,.85), rgba(10,15,13,.4));
+  border-bottom: 1px solid var(--border);
+}
+.nav { display: flex; align-items: center; justify-content: space-between; padding: var(--space-4) 0; }
+.nav .left, .nav .right { display: flex; align-items: center; gap: var(--space-4); }
+
+/* =Footer ---------------------------------------------------------------- */
+.footer { color: var(--muted); font-size: var(--fs-12); padding: var(--space-6) 0; border-top: 1px solid var(--border); }
+
+/* =Badges & Chips --------------------------------------------------------- */
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-weight: 700; font-size: var(--fs-12); border: 1px solid var(--border); background: rgba(255,255,255,.06); }
+.badge.win { background: rgba(61, 255, 155, .12); border-color: rgba(61,255,155,.35); }
+.badge.lose { background: rgba(255, 59, 48, .12); border-color: rgba(255,59,48,.35); }
+
+/* =Spacing utilities ------------------------------------------------------ */
+.mt-0{margin-top:0}.mt-2{margin-top:var(--space-2)}.mt-4{margin-top:var(--space-4)}.mt-6{margin-top:var(--space-6)}.mt-8{margin-top:var(--space-8)}
+.mb-0{margin-bottom:0}.mb-2{margin-bottom:var(--space-2)}.mb-4{margin-bottom:var(--space-4)}.mb-6{margin-bottom:var(--space-6)}.mb-8{margin-bottom:var(--space-8)}
+.pt-0{padding-top:0}.pt-4{padding-top:var(--space-4)}.pt-6{padding-top:var(--space-6)}.pt-8{padding-top:var(--space-8)}
+.pb-0{padding-bottom:0}.pb-4{padding-bottom:var(--space-4)}.pb-6{padding-bottom:var(--space-6)}.pb-8{padding-bottom:var(--space-8)}
+
+/* =Visibility helpers ----------------------------------------------------- */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* =Toasts (simple inline) ------------------------------------------------- */
+.toast { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.06); }
+.toast.info { border-color: rgba(255,255,255,.15); }
+.toast.warn { border-color: rgba(226,192,68,.45); background: rgba(226,192,68,.12); }
+.toast.error { border-color: rgba(255,59,48,.35); background: rgba(255,59,48,.12); }
+
+
+/* Center login-shell perfectly in viewport (login page only) */
+body.page--centered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+
+/* Ensure proper stacking when on smaller screens */
+@media (max-width: 880px) {
+    body {
+        align-items: flex-start;
+        padding-top: 40px;
+    }
+
+    .login-shell {
+        margin: auto;
+    }
+}
+
+/* --- Layout positioning adjustments --- */
+
+/* Keep header at top but logo + profile spaced properly */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 40;
+    background: linear-gradient(180deg, rgba(10,15,13,.85), rgba(10,15,13,.4));
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+    /* Adjust logo cluster */
+    .header .left {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+    }
+
+    /* Fix profile button top-right cleanly */
+    .header .right {
+        position: static;
+        margin-left: auto;
+    }
+
+/* Keep footer centered at bottom */
+.footer {
+    position: static;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    width: fit-content;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+/* Add spacing so content doesn't hide behind header/footer */
+body {
+    padding-top: 80px;
+    padding-bottom: 60px;
+}
+/* --- Avatar picker (profile) ------------------------------------------- */
+.avatar-btn {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    width: 72px;
+    height: 72px;
+    border-radius: 999px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    outline-offset: 4px;
+}
+
+    .avatar-btn img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+/* Popover panel */
+.avatar-picker {
+    position: absolute;
+    z-index: 60;
+    min-width: 260px;
+    background: rgba(7,10,9,.92);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-4);
+}
+
+    .avatar-picker h3 {
+        margin: 0 0 var(--space-3);
+        font-size: var(--fs-16);
+        color: var(--muted);
+    }
+
+/* Grid of avatars */
+.avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 72px);
+    gap: var(--space-3);
+}
+
+.avatar-option {
+    border: 0;
+    background: rgba(255,255,255,.06);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0;
+    width: 72px;
+    height: 72px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform .06s ease, filter .15s ease, border-color .15s ease;
+}
+
+    .avatar-option:hover {
+        filter: brightness(1.05);
+        transform: translateY(-1px);
+        border-color: var(--border-strong);
+    }
+
+    .avatar-option:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    .avatar-option img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+.avatar-actions {
+    margin-top: var(--space-4);
+    display: flex;
+    justify-content: flex-end;
+}
+/* --- Avatar picker: animation & reduced motion ------------------------- */
+.avatar-picker {
+    opacity: 0;
+    transform: scale(.98);
+    transition: opacity .16s ease, transform .16s ease;
+    pointer-events: auto; /* shown/hidden is controlled via [hidden] + .is-open */
+}
+
+    .avatar-picker.is-open {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+@media (prefers-reduced-motion: reduce) {
+    .avatar-picker {
+        transition: none;
+    }
+}

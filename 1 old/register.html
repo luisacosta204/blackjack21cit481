@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blackjack 21 — Create Account</title>
+  <meta name="description" content="Create your Blackjack 21 account" />
+  <!-- Fonts & Global Styles -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <main class="login-shell" aria-labelledby="page-title">
+    <!-- Brand / Visual side -->
+    <section class="brand-panel" aria-label="Blackjack 21 branding">
+      <div class="brand-grid" aria-hidden="true"></div>
+      <div class="logo" role="img" aria-label="Blackjack 21 logo">
+        <div class="chip">21</div>
+        <div>
+          <h1 id="page-title" class="logo-title">Blackjack 21</h1>
+          <div class="logo-sub">Play smart. Hit the table.</div>
+        </div>
+      </div>
+      <div class="card-fan animate-float" aria-hidden="true">
+        <div class="card is-1">
+          <div class="corner"><span class="pip">A♠</span></div>
+          <div class="center">♠</div>
+          <div class="bottom"><span class="pip">A♠</span></div>
+        </div>
+        <div class="card is-2">
+          <div class="corner"><span class="pip red">Q♥</span></div>
+          <div class="center">♥</div>
+          <div class="bottom"><span class="pip red">Q♥</span></div>
+        </div>
+        <div class="card is-3">
+          <div class="corner"><span class="pip">10♣</span></div>
+          <div class="center">♣</div>
+          <div class="bottom"><span class="pip">10♣</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sign-up form side -->
+    <section class="panel" aria-label="Sign up form">
+      <h2 class="panel-header">Create your account</h2>
+      <p class="panel-subtle">Join the table in seconds. It's free.</p>
+
+      <div id="errorBox" class="error" role="alert" aria-live="polite" style="display:none"></div>
+
+      <form id="signupForm" class="form" action="/register" method="POST" novalidate>
+        <div class="field">
+          <label for="username">Username</label>
+          <div class="input-wrap">
+            <input id="username" name="username" type="text" autocomplete="username" placeholder="ace_player" minlength="3" maxlength="24" required aria-required="true" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <div class="input-wrap">
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@casino.com" required aria-required="true" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" placeholder="••••••••" required aria-required="true" />
+            <button class="icon" type="button" id="togglePw" aria-label="Show password" title="Show password">👁️</button>
+          </div>
+          <small class="panel-subtle">Use at least 8 characters, including a number and a letter.</small>
+        </div>
+
+        <div class="field">
+          <label for="confirm">Confirm password</label>
+          <div class="input-wrap">
+            <input id="confirm" name="confirm" type="password" autocomplete="new-password" minlength="8" placeholder="••••••••" required aria-required="true" />
+            <button class="icon" type="button" id="toggleConfirm" aria-label="Show password" title="Show password">👁️</button>
+          </div>
+        </div>
+
+        <label class="checkbox">
+          <input id="terms" name="terms" type="checkbox" required aria-required="true" />
+          <span>I agree to the <a class="mutelink" href="/terms" target="_blank" rel="noopener">Terms</a> and <a class="mutelink" href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+        </label>
+
+        <button class="btn" type="submit" id="createBtn">Create Account</button>
+        <a class="btn btn-secondary" href="index.html" role="button">Back to Sign In</a>
+
+        <footer class="mt-4">
+          Already have an account? <a class="mutelink" href="index.html">Sign in</a>
+        </footer>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('signupForm');
+    const username = document.getElementById('username');
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    const confirmPw = document.getElementById('confirm');
+    const errorBox = document.getElementById('errorBox');
+    const togglePw = document.getElementById('togglePw');
+    const toggleConfirm = document.getElementById('toggleConfirm');
+
+    // toggle visibility
+    function toggleVisibility(input, btn){
+      const showing = input.getAttribute('type') === 'text';
+      input.setAttribute('type', showing ? 'password' : 'text');
+      btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+      btn.title = showing ? 'Show password' : 'Hide password';
+      btn.textContent = showing ? '👁️' : '🙈';
+    }
+    togglePw.addEventListener('click', () => toggleVisibility(password, togglePw));
+    toggleConfirm.addEventListener('click', () => toggleVisibility(confirmPw, toggleConfirm));
+
+    function showError(msg){
+      errorBox.textContent = msg;
+      errorBox.style.display = 'block';
+      errorBox.focus?.();
+    }
+
+    function clearError(){
+      errorBox.textContent = '';
+      errorBox.style.display = 'none';
+    }
+
+    function validEmail(v){
+      return /[^@\s]+@[^@\s]+\.[^@\s]+/.test(v);
+    }
+
+    function strongEnough(v){
+      return v.length >= 8 && /[A-Za-z]/.test(v) && /\d/.test(v);
+    }
+
+    form.addEventListener('submit', (e) => {
+      clearError();
+
+      const u = username.value.trim();
+      const em = email.value.trim();
+      const pw = password.value.trim();
+      const cpw = confirmPw.value.trim();
+
+      if(!u || !em || !pw || !cpw){
+        e.preventDefault();
+        return showError('Please complete all fields.');
+      }
+      if(!validEmail(em)){
+        e.preventDefault();
+        return showError('Please enter a valid email.');
+      }
+      if(!strongEnough(pw)){
+        e.preventDefault();
+        return showError('Password must be at least 8 characters and include a letter and a number.');
+      }
+      if(pw !== cpw){
+        e.preventDefault();
+        return showError('Passwords do not match.');
+      }
+      if(!document.getElementById('terms').checked){
+        e.preventDefault();
+        return showError('Please accept the Terms to continue.');
+      }
+
+      // Demo only — prevent navigation until backend exists
+      e.preventDefault();
+      showError('Demo only — wire this form to your backend at /register.');
+    });
+  </script>
+</body>
+</html>

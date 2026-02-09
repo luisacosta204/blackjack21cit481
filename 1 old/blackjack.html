@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blackjack 21</title>
+
+    <!-- Global casino theme -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/header-user.css">
+
+    <!-- Page-specific styles -->
+    <link rel="stylesheet" href="blackjack/blackjack.css?v=dev1">
+    <script src="blackjack/blackjack.js?v=dev1" defer></script>
+</head>
+<body>
+    <header class="header">
+        <div class="left user-info">
+            <img id="headerAvatar" src="assets/avatars/1.png" alt="User avatar">
+            <span id="headerUsername" class="username"></span>
+        </div>
+
+        <div class="right cluster">
+            <button id="backButton" class="back-button btn-secondary btn">⮐ Back to Home</button>
+            <label for="deckSelect" class="muted">Deck:</label>
+            <select id="deckSelect" class="select"></select>
+            <span class="badge" id="bankBadge" title="Your chip balance"></span>
+        </div>
+    </header>
+
+    <main class="container stack">
+        <section class="panel">
+            <h2 class="panel-header">Table</h2>
+            <p class="panel-subtle">Beat the dealer without going over 21. Blackjack pays 3:2. Dealer stands on 17.</p>
+
+            <div class="table-wrap">
+                <div class="row">
+                    <div class="hand">
+                        <div class="label">Dealer</div>
+                        <div class="cards" id="dealerCards" aria-live="polite"></div>
+                        <div class="score" id="dealerScore">Score: —</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="hand">
+                        <div class="label">You</div>
+                        <div class="cards" id="playerCards" aria-live="polite"></div>
+                        <div class="score" id="playerScore">Score: —</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="toast info mt-6" id="status" aria-live="polite">Place your bet to begin.</div>
+        </section>
+
+        <section class="grid cols-2">
+            <div class="panel">
+                <h3 class="panel-header">Betting</h3>
+                <p class="panel-subtle">Set wager, number of hands, then Deal.</p>
+
+                <div class="cluster">
+                    <button class="chip-btn chip-5" data-chip="5" title="+5">+5</button>
+                    <button class="chip-btn chip-25" data-chip="25" title="+25">+25</button>
+                    <button class="chip-btn chip-100" data-chip="100" title="+100">+100</button>
+                    <button class="btn-ghost btn" id="clearBetBtn" title="Clear bet">Clear</button>
+                </div>
+
+                <div class="bet-line mt-4">
+                    <span class="muted">Bet per Hand:</span>
+                    <strong id="betAmount">0</strong>
+                </div>
+
+                <div class="bet-line mt-2">
+                    <label for="handsSelect" class="muted">Hands:</label>
+                    <select id="handsSelect" class="select">
+                        <option value="1" selected>1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                    </select>
+                    <span class="muted">Total wager:</span>
+                    <strong id="totalWager">0</strong>
+                </div>
+
+                <div class="mt-4 cluster">
+                    <button class="btn" id="dealBtn">Deal</button>
+                    <button class="btn-secondary btn" id="newRoundBtn" disabled>New Round</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3 class="panel-header">Actions</h3>
+                <p class="panel-subtle">Act on the highlighted hand.</p>
+                <div class="cluster">
+                    <button class="btn-secondary btn" id="hitBtn" disabled>Hit</button>
+                    <button class="btn-secondary btn" id="standBtn" disabled>Stand</button>
+                    <button class="btn-secondary btn" id="doubleBtn" disabled>Double</button>
+                    <button class="btn-secondary btn" id="splitBtn" disabled>Split</button>
+                    <button class="btn-secondary btn" id="insuranceBtn" disabled>Take Insurance</button>
+                    <button class="btn-secondary btn" id="changeDeckBtn" title="Switch card style">Change Deck</button>
+                    <button class="btn-danger btn" id="resetBankBtn" title="Reset bank to 500">Reset Bank</button>
+                </div>
+                <p class="panel-subtle mt-2">
+                    <span class="muted">Shoe:</span> <span id="shoeInfo">—</span>
+                    <span class="muted"> | Count:</span>
+                    <strong id="countInfo">—</strong>
+                    <span class="muted"> (</span><strong id="countLabel">Neutral</strong><span class="muted">)</span>
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">© Blackjack 21</footer>
+
+    <script>
+      (function () {
+        const avatar = document.getElementById('headerAvatar');
+        const usernameEl = document.getElementById('headerUsername');
+        const storedName = localStorage.getItem('bj21.username');
+        const storedAvatar = localStorage.getItem('bj21.avatar');
+        const username = storedName || `Guest_${Math.floor(1000 + Math.random() * 9000)}`;
+        usernameEl.textContent = username;
+        localStorage.setItem('bj21.username', username);
+        if (storedAvatar) avatar.src = storedAvatar;
+        window.addEventListener('storage', (e) => {
+          if (e.key === 'bj21.avatar' && e.newValue) { avatar.src = e.newValue; }
+        });
+      })();
+    </script>
+</body>
+</html>

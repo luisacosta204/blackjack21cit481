@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blackjack 21 — Login</title>
+    <meta name="description" content="Login to Blackjack 21" />
+    <!-- Fonts & Global Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <main class="login-shell" aria-labelledby="page-title">
+        <!-- Brand / Visual side -->
+        <section class="brand-panel" aria-label="Blackjack 21 branding">
+            <div class="brand-grid" aria-hidden="true"></div>
+            <div class="logo" role="img" aria-label="Blackjack 21 logo">
+                <div class="chip">21</div>
+                <div>
+                    <h1 id="page-title" class="logo-title">Blackjack 21</h1>
+                    <div class="logo-sub">Play smart. Hit the table.</div>
+                </div>
+            </div>
+            <div class="card-fan animate-float" aria-hidden="true">
+                <div class="card is-1">
+                    <div class="corner"><span class="pip">A♠</span></div>
+                    <div class="center">♠</div>
+                    <div class="bottom"><span class="pip">A♠</span></div>
+                </div>
+                <div class="card is-2">
+                    <div class="corner"><span class="pip red">K♥</span></div>
+                    <div class="center">♥</div>
+                    <div class="bottom"><span class="pip red">K♥</span></div>
+                </div>
+                <div class="card is-3">
+                    <div class="corner"><span class="pip">J♣</span></div>
+                    <div class="center">♣</div>
+                    <div class="bottom"><span class="pip">J♣</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Login form side -->
+        <section class="panel" aria-label="Login form">
+            <h2 class="panel-header">Welcome back</h2>
+            <p class="panel-subtle">Sign in to your Blackjack 21 account to continue.</p>
+
+            <div id="errorBox" class="error" role="alert" aria-live="polite">Invalid credentials. Please try again.</div>
+
+            <form id="loginForm" class="form" action="/login" method="POST" novalidate>
+                <div class="field">
+                    <label for="email">Email or username</label>
+                    <div class="input-wrap">
+                        <input id="email" name="email" type="text" inputmode="email" autocomplete="username" placeholder="you@casino.com" required aria-required="true" />
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" placeholder="••••••••" required aria-required="true" />
+                        <button class="icon" type="button" id="togglePw" aria-label="Show password" title="Show password">👁️</button>
+                    </div>
+                </div>
+
+                <div class="cluster" style="justify-content:space-between;">
+                    <label class="checkbox">
+                        <input type="checkbox" id="remember" name="remember" />
+                        <span>Remember me</span>
+                    </label>
+                    <a class="mutelink" href="/forgot-password">Forgot password?</a>
+                </div>
+
+                <button class="btn" type="submit" id="submitBtn">Sign In</button>
+                <button class="btn btn-secondary" type="button" id="guestBtn">Continue as Guest</button>
+
+                <footer class="mt-4">
+                    No account? <a class="mutelink" href="register.html">Create one</a>
+                </footer>
+            </form>
+        </section>
+    </main>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const email = document.getElementById('email');
+        const password = document.getElementById('password');
+        const errorBox = document.getElementById('errorBox');
+        const togglePw = document.getElementById('togglePw');
+        const guestBtn = document.getElementById('guestBtn');
+
+        // Toggle password visibility
+        togglePw.addEventListener('click', () => {
+            const showing = password.getAttribute('type') === 'text';
+            password.setAttribute('type', showing ? 'password' : 'text');
+            togglePw.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+            togglePw.title = showing ? 'Show password' : 'Hide password';
+            togglePw.textContent = showing ? '👁️' : '🙈';
+        });
+
+        // Simple client-side validation demo
+        form.addEventListener('submit', (e) => {
+            errorBox.style.display = 'none';
+
+            const emailVal = email.value.trim();
+            const passVal = password.value.trim();
+
+            // Basic checks (replace with real validation/server auth)
+            if (!emailVal || !passVal) {
+                e.preventDefault();
+                errorBox.textContent = 'Please fill out all fields.';
+                errorBox.style.display = 'block';
+                return;
+            }
+            if (passVal.length < 8) {
+                e.preventDefault();
+                errorBox.textContent = 'Password must be at least 8 characters.';
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            // Demo: prevent actual navigation without backend
+            // Remove this block when wiring to your backend.
+            e.preventDefault();
+            errorBox.style.display = 'block';
+            errorBox.textContent = 'Demo only — wire this form to your backend at /login.';
+        });
+
+        // Guest flow — change the href to your desired route
+        guestBtn.addEventListener('click', () => {
+            window.location.href = "home.html";
+        });
+
+    </script>
+</body>
+</html>

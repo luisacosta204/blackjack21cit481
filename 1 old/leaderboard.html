@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blackjack 21 — Leaderboards</title>
+    <meta name="description" content="Global leaderboards for Blackjack 21" />
+    <!-- Fonts & Global Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/style.css" />
+    <link rel="stylesheet" href="assets/header-user.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav container">
+            <div class="left user-info">
+                <img id="headerAvatar" src="assets/avatars/1.png" alt="User avatar">
+                <span id="headerUsername" class="username"></span>
+            </div>
+
+            <div class="right">
+                <a href="home.html" class="btn btn-secondary">Home</a>
+                <a href="profile.html" class="btn btn-secondary">Profile</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container stack" style="min-height:80vh; padding-top:24px;">
+        <section class="panel">
+            <h2 class="panel-header">Leaderboards</h2>
+            <p class="panel-subtle">See who’s on top. Switch between time ranges below.</p>
+
+            <div class="cluster" role="tablist" aria-label="Leaderboard ranges">
+                <button class="btn btn-secondary" role="tab" aria-selected="true" id="tab-all">All-Time</button>
+                <button class="btn btn-secondary" role="tab" aria-selected="false" id="tab-week">Weekly</button>
+                <button class="btn btn-secondary" role="tab" aria-selected="false" id="tab-day">Daily</button>
+            </div>
+
+            <div class="stack mt-6">
+                <div class="input-wrap" style="max-width:340px;">
+                    <input id="search" type="search" placeholder="Search player..." aria-label="Search player" />
+                </div>
+
+                <div class="panel" style="padding:0; overflow:auto;">
+                    <table class="table" id="lbTable" aria-label="Leaderboard table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Player</th>
+                                <th>Wins</th>
+                                <th>Losses</th>
+                                <th>Best Streak</th>
+                                <th>Score</th>
+                                <th>Last Played</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>1</td><td>ace_master</td><td>312</td><td>98</td><td>11</td><td>12840</td><td>Today</td></tr>
+                            <tr><td>2</td><td>dealer_down</td><td>290</td><td>120</td><td>9</td><td>12030</td><td>1d ago</td></tr>
+                            <tr><td>3</td><td>split_king</td><td>275</td><td>130</td><td>10</td><td>11890</td><td>2d ago</td></tr>
+                            <tr><td>4</td><td>soft17</td><td>250</td><td>150</td><td>8</td><td>11000</td><td>3d ago</td></tr>
+                            <tr><td>5</td><td>chipsNdip</td><td>220</td><td>140</td><td>7</td><td>10040</td><td>5d ago</td></tr>
+                            <tr><td>6</td><td>queen_of_hearts</td><td>210</td><td>160</td><td>6</td><td>9800</td><td>6d ago</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer container" style="text-align:center;">
+        <p>© 2025 Blackjack 21. All rights reserved.</p>
+    </footer>
+
+    <script>
+      (function () {
+        const avatar = document.getElementById('headerAvatar');
+        const usernameEl = document.getElementById('headerUsername');
+        const storedName = localStorage.getItem('bj21.username');
+        const storedAvatar = localStorage.getItem('bj21.avatar');
+        const username = storedName || `Guest_${Math.floor(1000 + Math.random() * 9000)}`;
+        usernameEl.textContent = username;
+        localStorage.setItem('bj21.username', username);
+        if (storedAvatar) avatar.src = storedAvatar;
+        window.addEventListener('storage', (e) => {
+          if (e.key === 'bj21.avatar' && e.newValue) { avatar.src = e.newValue; }
+        });
+      })();
+
+      // Simple tabs + client-side filter placeholder
+      const search = document.getElementById('search');
+      const table = document.getElementById('lbTable');
+      const rows = search && table ? Array.from(table.querySelectorAll('tbody tr')) : [];
+      if (search) {
+        search.addEventListener('input', () => {
+          const q = search.value.toLowerCase();
+          rows.forEach(r => {
+            const player = r.children[1].textContent.toLowerCase();
+            r.style.display = player.includes(q) ? '' : 'none';
+          });
+        });
+      }
+    </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Texas Hold’em</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/header-user.css">
+  <link rel="stylesheet" href="holdem/holdem.css?v=clarity1"><!-- ✅ bumped -->
+  <script src="holdem/holdem.js?v=clarity1" defer></script><!-- ✅ bumped -->
+</head>
+<body>
+  <header class="header">
+    <div class="left user-info">
+      <img id="headerAvatar" src="assets/avatars/1.png" alt="User avatar">
+      <span id="headerUsername" class="username"></span>
+    </div>
+    <div class="right cluster">
+      <button id="backButton" class="back-button btn-secondary btn">⮐ Back to Home</button>
+      <label for="deckSelect" class="muted">Deck:</label>
+      <select id="deckSelect" class="select"></select>
+      <span class="badge" id="bankBadge" title="Your chip balance"></span>
+    </div>
+  </header>
+
+  <main class="container stack">
+    <section class="panel">
+      <h2 class="panel-header">Texas Hold’em Table</h2>
+      <p class="panel-subtle">Heads-up vs bot. Dealer(SB) acts first preflop, last postflop. Blinds, raises, all-ins, showdown.</p>
+
+      <div class="table-wrap">
+        <div class="row">
+          <div class="hand">
+            <div class="label">
+              Opponent
+              <span class="tag" id="oppRole"></span>
+              <span class="stack tag" id="oppStack">–</span>
+            </div>
+            <div class="cards" id="opponentCards" aria-label="Opponent hole cards"></div>
+            <div class="score" id="oppHandText"><!-- ✅ hand name appears here at showdown --></div>
+          </div>
+        </div>
+
+        <div class="row community">
+          <div class="hand">
+            <div class="label">Community</div>
+            <div class="cards" id="communityCards" aria-label="Community cards"></div>
+            <div class="potline">
+              <span class="muted">Stage:</span> <strong id="stageLabel">Idle</strong>
+              <span class="muted">| Pot:</span> <strong id="potAmount">0</strong>
+              <span class="muted">| To call:</span> <strong id="toCall">0</strong>
+            </div>
+            <div class="log" id="actionLog" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="hand">
+            <div class="label">
+              You
+              <span class="tag" id="youRole"></span>
+              <span class="stack tag" id="youStack">–</span>
+            </div>
+            <div class="cards" id="yourCards" aria-label="Your hole cards"></div>
+            <div class="score" id="youHandText"><!-- ✅ hand name appears here at showdown --></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast info mt-6" id="status" aria-live="polite">Place a bet to buy-in, then Deal.</div>
+    </section>
+
+    <!-- Controls (unchanged) -->
+    <section class="grid cols-2">
+      <div class="panel">
+        <h3 class="panel-header">Buy-in & Blinds</h3>
+        <p class="panel-subtle">SB/BB are fixed; you can rebuy if you bust.</p>
+        <div class="cluster">
+            <span class="muted">SB:</span><strong id="sbLabel">5</strong>
+            <span class="muted">BB:</span><strong id="bbLabel">10</strong>
+            <span class="muted">Bank:</span><strong id="stackSizeLabel">500</strong>
+        </div>
+        <div class="mt-4 cluster">
+          <button class="btn" id="dealBtn">Deal New Hand</button>
+          <button class="btn-secondary btn" id="rebuyBtn">Rebuy (Reset Stacks)</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 class="panel-header">Actions</h3>
+        <p class="panel-subtle">Your move when highlighted.</p>
+
+        <div id="turnBadge" class="turn-badge" hidden>YOUR TURN</div>
+
+        <div class="cluster wrap">
+          <button class="btn-ghost btn" id="foldBtn" disabled>Fold</button>
+          <button class="btn-secondary btn" id="checkCallBtn" disabled>Check / Call</button>
+        </div>
+
+        <div class="betting-box">
+          <div class="bet-row">
+            <label class="muted">Bet/Raise:</label>
+            <input type="range" id="betSlider" min="0" max="0" value="0" step="5">
+            <input type="number" id="betInput" min="0" value="0" step="5">
+            <button class="btn" id="betRaiseBtn" disabled>Bet / Raise</button>
+          </div>
+          <div class="quickbets cluster">
+            <button class="btn-ghost btn qb" data-qb="half">½ Pot</button>
+            <button class="btn-ghost btn qb" data-qb="twoThirds">⅔ Pot</button>
+            <button class="btn-ghost btn qb" data-qb="pot">Pot</button>
+            <button class="btn-ghost btn qb" data-qb="allin">All-in</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ✅ SHOWDOWN OVERLAY -->
+  <div id="showdownOverlay" class="sdn hidden" aria-modal="true" role="dialog">
+    <div class="sdn-card">
+      <div class="sdn-head">
+        <h3>Showdown</h3>
+        <button class="btn-ghost btn sdn-close" id="closeShowdown">Close</button>
+      </div>
+      <div class="sdn-grid">
+        <div class="sdn-side">
+          <div class="sdn-title">Opponent</div>
+          <div class="cards" id="sdnOppCards"></div>
+          <div class="score" id="sdnOppText"></div>
+        </div>
+        <div class="sdn-side">
+          <div class="sdn-title">You</div>
+          <div class="cards" id="sdnYouCards"></div>
+          <div class="score" id="sdnYouText"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">© Texas Hold’em</footer>
+
+  <script>
+    (function () {
+      const avatar = document.getElementById('headerAvatar');
+      const usernameEl = document.getElementById('headerUsername');
+      const storedName = localStorage.getItem('bj21.username');
+      const storedAvatar = localStorage.getItem('bj21.avatar');
+      const username = storedName || `Guest_${Math.floor(1000 + Math.random() * 9000)}`;
+      usernameEl.textContent = username;
+      localStorage.setItem('bj21.username', username);
+      if (storedAvatar) avatar.src = storedAvatar;
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'bj21.avatar' && e.newValue) { avatar.src = e.newValue; }
+      });
+    })();
+  </script>
+</body>
+</html>

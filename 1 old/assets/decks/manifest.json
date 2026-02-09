@@ -1,0 +1,13 @@
+{
+  "default": "style_1",
+  "decks": [
+    {
+      "id": "style_1",
+      "name": "Style 1 (Images)"
+    },
+    {
+      "id": "text",
+      "name": "Text Only"
+    }
+  ]
+}
