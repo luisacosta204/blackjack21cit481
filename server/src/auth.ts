@@ -3,10 +3,11 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
+const secretFromEnv = process.env.JWT_SECRET;
+if (!secretFromEnv) {
   throw new Error("JWT_SECRET is not set in server/.env");
 }
+const JWT_SECRET: string = secretFromEnv;
 
 export type JwtUser = {
   id: number;
