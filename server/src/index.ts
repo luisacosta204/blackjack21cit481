@@ -125,6 +125,35 @@ app.get("/me", async (req, res) => {
   }
 });
 
+app.post("/game-results", async (req, res) => {
+  try {
+    // Extract JWT
+    const auth = req.headers.authorization || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (!token) return res.status(401).json({ ok: false, error: "Missing token" });
+
+    const jwtUser = verifyToken(token);
+
+    //Extract Body
+    const { won, delta } = req.body ?? {};
+    if (typeof won !== "boolean" || typeof delta !== "number") {
+      return res.status(400).json({ ok: false, error: "Invalid body (won: boolean, delta: number)" });
+    }
+
+    //Insert Game Results
+    await pool.query(
+      `insert into public.game_results (user_id, won, delta, created_at)
+       values ($1, $2, $3, now())`,
+      [jwtUser.id, won, delta]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

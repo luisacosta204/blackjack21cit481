@@ -12,7 +12,9 @@ import { buildShoe, draw } from "../features/blackjack/deck";
 import { useDeckTheme } from "../features/blackjack/useDeckTheme";
 import CardImage from "../features/blackjack/CardImage";
 
+
 import "./blackjack/blackjack.css";
+import { recordGameResult } from "../api/gameResults";
 
 // ── Bank constants ────────────────────────────────────────────────────────────
 const BANK_KEY = "bjBank";
@@ -123,12 +125,26 @@ export default function BlackjackPage() {
     setRoundOver(true);
     setInRound(false);
 
+    //Apply payout
     setBank((prev) => {
-      let next = prev;
-      if (outcome === "win")       next = prev + betPerHand;
-      if (outcome === "blackjack") next = prev + Math.floor(betPerHand * 1.5);
-      if (outcome === "lose")      next = prev - betPerHand;
+      let delta = 0;
+      if (outcome === "win")       delta = betPerHand;
+      if (outcome === "blackjack") delta = Math.floor(betPerHand * 1.5);
+      if (outcome === "lose")      delta = -betPerHand;
+      // push: delta = 0
+      
+      const next = prev + delta;
       saveBank(next);
+
+      // Record result in DB (only for logged-in users)
+      if (user) {
+        const won = outcome === "win" || outcome === "blackjack";
+        recordGameResult({ won, delta }).catch((err) => {
+          console.error("Failed to record game result:", err);
+          //Don't block the UI - just log the error
+        });
+      }
+
       return next;
     });
   };
