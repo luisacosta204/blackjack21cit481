@@ -154,6 +154,58 @@ app.post("/game-results", async (req, res) => {
   }
 });
 
+app.post("/update-credits", async (req, res) => {
+  try {
+    // Extract JWT
+    const auth = req.headers.authorization || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (!token) return res.status(401).json({ ok: false, error: "Missing token" });
+
+    const jwtUser = verifyToken(token);
+
+    // Extract new credits amount
+    const { credits } = req.body ?? {};
+    if (typeof credits !== "number") {
+      return res.status(400).json({ ok: false, error: "Invalid credits value" });
+    }
+
+    // Update user's credits in database
+    await pool.query(
+      `UPDATE users SET credits = $1 WHERE id = $2`,
+      [credits, jwtUser.id]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+});
+
+app.get("/leaderboard", async (_req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        u.username,
+        COUNT(gr.id)::int as total_games,
+        SUM(CASE WHEN gr.won THEN 1 ELSE 0 END)::int as wins,
+        SUM(CASE WHEN gr.won THEN 0 ELSE 1 END)::int as losses,
+        SUM(gr.delta)::int as net_winnings
+      FROM users u
+      LEFT JOIN game_results gr ON u.id = gr.user_id
+      GROUP BY u.id, u.username
+      HAVING COUNT(gr.id) > 0
+      ORDER BY net_winnings DESC
+      LIMIT 10
+    `);
+
+    res.json({ ok: true, leaderboard: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, error: "Failed to fetch leaderboard" });
+  }
 });

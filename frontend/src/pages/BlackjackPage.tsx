@@ -15,6 +15,7 @@ import CardImage from "../features/blackjack/CardImage";
 
 import "./blackjack/blackjack.css";
 import { recordGameResult } from "../api/gameResults";
+import { updateCredits } from "../api/credits";
 
 // ── Bank constants ────────────────────────────────────────────────────────────
 const BANK_KEY = "bjBank";
@@ -139,9 +140,16 @@ export default function BlackjackPage() {
       // Record result in DB (only for logged-in users)
       if (user) {
         const won = outcome === "win" || outcome === "blackjack";
+
+        // Record game result
         recordGameResult({ won, delta }).catch((err) => {
           console.error("Failed to record game result:", err);
           //Don't block the UI - just log the error
+        });
+
+        // Update credits in database
+        updateCredits(next).catch((err) => {
+          console.error("Failed to update credits:", err);
         });
       }
 

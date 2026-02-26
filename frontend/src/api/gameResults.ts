@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+import { API_BASE_URL } from "../config";
+const API_BASE = API_BASE_URL;
 
 export interface RecordGameResultPayload {
   won: boolean;

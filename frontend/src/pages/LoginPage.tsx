@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config";
+import { updateCredits } from "../api/credits";
+
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -8,6 +11,13 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [busy, setBusy] = useState(false);
+  const BANK_KEY = "bjBank";
+  const START_BANK = 500;
+
+  function loadBank(): number {
+    const stored = localStorage.getItem(BANK_KEY);
+    return stored ? parseInt(stored, 10) : START_BANK;
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,7 +39,7 @@ export default function LoginPage() {
           return;
         }
 
-        const res = await fetch("http://localhost:3000/auth/login", {
+        const res = await fetch(`${API_BASE_URL}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ identifier, password }),
@@ -44,6 +54,12 @@ export default function LoginPage() {
         }
 
         localStorage.setItem("token", data.token);
+
+        // Sync localStorage bank to database credits
+        const bankValue = loadBank();
+        updateCredits(bankValue).catch((err) => {
+          console.error("Failed to sync credits on login", err)
+        })
         navigate("/home");
       } else {
         // Register flow
@@ -70,7 +86,7 @@ export default function LoginPage() {
           return;
         }
 
-        const res = await fetch("http://localhost:3000/auth/register", {
+        const res = await fetch(`${API_BASE_URL}/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username, email, password }),
@@ -86,6 +102,12 @@ export default function LoginPage() {
 
         // Auto-login after successful registration
         localStorage.setItem("token", data.token);
+
+        // Sync localStorage bank to database credits
+        const bankValue = loadBank();
+        updateCredits(bankValue).catch((err) => {
+          console.error("Failed to sync credits on registration:", err)
+        })
         navigate("/home");
       }
     } catch {
