@@ -4,6 +4,7 @@ import AppLayout from "./components/AppLayout";
 import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
 import BlackjackPage from "./pages/BlackjackPage";
+import SlotsPage from "./pages/SlotsPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import ProfilePage from "./pages/ProfilePage";
 
@@ -16,6 +17,7 @@ export default function App() {
       <Route element={<AppLayout />}>
         <Route path="/home" element={<HomePage />} />
         <Route path="/blackjack" element={<BlackjackPage />} />
+        <Route path="/slots" element={<SlotsPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>

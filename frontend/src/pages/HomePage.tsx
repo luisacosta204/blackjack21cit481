@@ -57,18 +57,12 @@ export default function HomePage() {
 
           <div className="grid cols-2" style={{ maxWidth: 600, marginTop: "2rem", marginInline: "auto" }}>
             <Link to="/blackjack" className="btn">
-              Play Blackjack
+              🂡 Play Blackjack
             </Link>
 
-            <a
-              href="#"
-              className="btn btn-secondary disabled"
-              style={{ cursor: "not-allowed", opacity: 0.5 }}
-              onClick={(e) => e.preventDefault()}
-              aria-disabled="true"
-            >
-              Coming Soon
-            </a>
+            <Link to="/slots" className="btn">
+              🎰 Play Slots
+            </Link>
           </div>
 
           <div className="stack mt-8" style={{ maxWidth: 400, marginInline: "auto" }}>
