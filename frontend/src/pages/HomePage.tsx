@@ -67,6 +67,10 @@ export default function HomePage() {
             <Link to="/craps" className="btn">
               🎲 Play Craps
             </Link>
+
+            <Link to="/roulette" className="btn">
+              🎯 Play Roulette
+            </Link>
           </div>
 
           <div className="stack mt-8" style={{ maxWidth: 400, marginInline: "auto" }}>
