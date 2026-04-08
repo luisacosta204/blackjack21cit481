@@ -6,7 +6,7 @@ import { useMe } from "../hooks/useMe";
 import { getOrCreateGuestUsername } from "../utils/guest";
 import { updateCredits } from "../api/credits";
 import { recordGameResult } from "../api/gameResults";
-import "./Craps/craps.css";
+import "./craps/craps.css";
 
 const BANK_KEY = "bjBank";
 const START_BANK = 500;
