@@ -55,13 +55,17 @@ export default function HomePage() {
           <h2 className="panel-header">Welcome to the Casino Lobby</h2>
           <p className="panel-subtle">Choose a game mode or view your stats below.</p>
 
-          <div className="grid cols-2" style={{ maxWidth: 600, marginTop: "2rem", marginInline: "auto" }}>
+          <div className="grid cols-2" style={{ maxWidth: 720, marginTop: "2rem", marginInline: "auto" }}>
             <Link to="/blackjack" className="btn">
               🂡 Play Blackjack
             </Link>
 
             <Link to="/slots" className="btn">
               🎰 Play Slots
+            </Link>
+
+            <Link to="/craps" className="btn">
+              🎲 Play Craps
             </Link>
           </div>
 
