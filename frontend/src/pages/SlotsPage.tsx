@@ -5,7 +5,7 @@ import { useAvatar } from '../hooks/useAvatar';
 import { getOrCreateGuestUsername } from '../utils/guest';
 import { updateCredits } from '../api/credits';
 import { recordGameResult } from '../api/gameResults';
-import './slots/slots.css';
+import './Slots/slots.css';
 
 // Symbols with weighted probabilities
 const SYMBOLS = [
