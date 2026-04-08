@@ -8,6 +8,7 @@ import SlotsPage from "./pages/SlotsPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import ProfilePage from "./pages/ProfilePage";
 import CrapsPage from "./pages/CrapsPage";
+import RoulettePage from "./pages/RoulettePage";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/blackjack" element={<BlackjackPage />} />
         <Route path="/slots" element={<SlotsPage />} />
         <Route path="/craps" element={<CrapsPage />} />
+        <Route path="/roulette" element={<RoulettePage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
