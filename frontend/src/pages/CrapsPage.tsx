@@ -7,7 +7,7 @@ import { getOrCreateGuestUsername } from "../utils/guest";
 import { updateCredits } from "../api/credits";
 import { recordGameResult } from "../api/gameResults";
 import { chipUrlForBank, chipUrlForTableTotal } from "../utils/chips";
-import "./Craps/craps.css";
+import "./craps/craps.css";
 import "../styles/bank-chip.css";
 
 const BANK_KEY = "bjBank";
