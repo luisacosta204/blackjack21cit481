@@ -6,7 +6,7 @@ import { getOrCreateGuestUsername } from '../utils/guest';
 import { updateCredits } from '../api/credits';
 import { recordGameResult } from '../api/gameResults';
 import { chipUrlForBank } from '../utils/chips';
-import './slots/slots.css';
+import './Slots/slots.css';
 import '../styles/bank-chip.css';
 
 // Symbols with weighted probabilities
