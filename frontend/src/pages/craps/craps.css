@@ -198,3 +198,19 @@
     flex-direction: column;
   }
 }
+
+.craps-page .chip-btn::before {
+  filter: saturate(1.25) brightness(1.08) drop-shadow(0 6px 10px rgba(0,0,0,0.35));
+}
+
+.craps-page .chip-btn.chip-5 {
+  box-shadow: 0 0 0 3px rgba(255,90,120,0.55), 0 8px 18px rgba(0,0,0,0.45);
+}
+
+.craps-page .chip-btn.chip-25 {
+  box-shadow: 0 0 0 3px rgba(70,220,170,0.55), 0 8px 18px rgba(0,0,0,0.45);
+}
+
+.craps-page .chip-btn.chip-100 {
+  box-shadow: 0 0 0 3px rgba(130,150,255,0.55), 0 8px 18px rgba(0,0,0,0.45);
+}
