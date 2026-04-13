@@ -341,7 +341,12 @@ export default function CrapsPage() {
             <Link to="/home" className="back-button btn-secondary btn">
               ⮐ Back to Home
             </Link>
-            <div className="craps-bank-badge" aria-label={`Bank: ${bank} chips`}>
+            <div
+              className="craps-bank-badge"
+              id="bankBadge"
+              aria-label={`Bank: ${bank} chips`}
+              style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
+            >
               {bank}
             </div>
           </div>
