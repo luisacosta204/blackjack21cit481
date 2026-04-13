@@ -23,18 +23,6 @@
   font-weight: 700;
 }
 
-.roulette-bank-badge::before {
-  content: "";
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  flex: 0 0 22px;
-  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.18), 0 2px 8px rgba(0,0,0,.35);
-  background:
-    radial-gradient(circle at 35% 35%, rgba(255,255,255,.85), rgba(255,255,255,.15) 28%, transparent 29%),
-    conic-gradient(from 0deg, #db335d 0 25%, #ffffff 25% 50%, #db335d 50% 75%, #ffffff 75% 100%);
-}
-
 .roulette-wrap {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
@@ -152,50 +140,7 @@
   box-shadow: 0 0 0 2px rgba(61,255,155,0.25);
 }
 
-.roulette-page .chip-btn {
-  position: relative;
-  width: 56px;
-  height: 56px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  color: transparent;
-  overflow: hidden;
-}
 
-.roulette-page .chip-btn::before,
-.roulette-page .chip-btn::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-}
-
-.roulette-page .chip-btn::before {
-  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.18), 0 6px 10px rgba(0,0,0,0.35);
-}
-
-.roulette-page .chip-btn.chip-5::before {
-  background: conic-gradient(#ff5a78 0 25%, #fff 25% 50%, #ff5a78 50% 75%, #fff 75% 100%);
-}
-
-.roulette-page .chip-btn.chip-25::before {
-  background: conic-gradient(#46dcaa 0 25%, #fff 25% 50%, #46dcaa 50% 75%, #fff 75% 100%);
-}
-
-.roulette-page .chip-btn.chip-100::before {
-  background: conic-gradient(#8296ff 0 25%, #fff 25% 50%, #8296ff 50% 75%, #fff 75% 100%);
-}
-
-.roulette-page .chip-btn::after {
-  content: attr(title);
-  display: grid;
-  place-items: center;
-  font-size: 14px;
-  font-weight: 800;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0,0,0,.65);
-}
 
 .roulette-chip-row {
   display: flex;
