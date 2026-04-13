@@ -13,7 +13,7 @@ import { useDeckTheme } from "../features/blackjack/useDeckTheme";
 import CardImage from "../features/blackjack/CardImage";
 import { chipUrlForBank } from "../utils/chips";
 
-import "./blackjack/blackjack.css";
+import "./Blackjack/blackjack.css";
 import "../styles/bank-chip.css";
 import { recordGameResult } from "../api/gameResults";
 import { updateCredits } from "../api/credits";
