@@ -11,9 +11,10 @@ import { handValue } from "../features/blackjack/engine";
 import { buildShoe, draw } from "../features/blackjack/deck";
 import { useDeckTheme } from "../features/blackjack/useDeckTheme";
 import CardImage from "../features/blackjack/CardImage";
+import { chipUrlForBank } from "../utils/chips";
 
-
-import "./Blackjack/blackjack.css";
+import "./blackjack/blackjack.css";
+import "../styles/bank-chip.css";
 import { recordGameResult } from "../api/gameResults";
 import { updateCredits } from "../api/credits";
 
@@ -295,8 +296,14 @@ export default function BlackjackPage() {
               )}
             </select>
 
-            <span className="badge" id="bankBadge" title="Your chip balance">
-              Bank: {bank}
+            <span
+              className="badge"
+              id="bankBadge"
+              title="Your chip balance"
+              aria-label={`Bank: ${bank} chips`}
+              style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
+            >
+              {bank}
             </span>
           </div>
         }

@@ -5,7 +5,9 @@ import { useAvatar } from '../hooks/useAvatar';
 import { getOrCreateGuestUsername } from '../utils/guest';
 import { updateCredits } from '../api/credits';
 import { recordGameResult } from '../api/gameResults';
-import './Slots/slots.css';
+import { chipUrlForBank } from '../utils/chips';
+import './slots/slots.css';
+import '../styles/bank-chip.css';
 
 // Symbols with weighted probabilities
 const SYMBOLS = [
@@ -270,7 +272,13 @@ export default function SlotsPage() {
           <button onClick={() => navigate('/home')} className="back-button btn-secondary btn">
             ⮐ Back to Home
           </button>
-          <span className="badge" title="Your credits">{bank}</span>
+          <span
+            className="badge"
+            id="bankBadge"
+            title="Your credits"
+            aria-label={`Bank: ${bank} chips`}
+            style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
+          >{bank}</span>
         </div>
       </header>
 
@@ -317,6 +325,7 @@ export default function SlotsPage() {
             <div className="cluster bj-chips" style={{ marginTop: '16px' }}>
               <button
                 className="chip-btn chip-5"
+                title="+5"
                 onClick={() => addChip(5)}
                 disabled={spinning}
               >
@@ -324,6 +333,7 @@ export default function SlotsPage() {
               </button>
               <button
                 className="chip-btn chip-25"
+                title="+25"
                 onClick={() => addChip(25)}
                 disabled={spinning}
               >
@@ -331,6 +341,7 @@ export default function SlotsPage() {
               </button>
               <button
                 className="chip-btn chip-100"
+                title="+100"
                 onClick={() => addChip(100)}
                 disabled={spinning}
               >

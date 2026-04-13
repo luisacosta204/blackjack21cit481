@@ -6,7 +6,9 @@ import { useMe } from "../hooks/useMe";
 import { getOrCreateGuestUsername } from "../utils/guest";
 import { updateCredits } from "../api/credits";
 import { recordGameResult } from "../api/gameResults";
-import "./craps/craps.css";
+import { chipUrlForBank, chipUrlForTableTotal } from "../utils/chips";
+import "./Craps/craps.css";
+import "../styles/bank-chip.css";
 
 const BANK_KEY = "bjBank";
 const START_BANK = 500;
@@ -406,7 +408,14 @@ export default function CrapsPage() {
               </div>
               <div>
                 <div className="muted small">Total on table</div>
-                <div className="craps-chip-badge total">{totalBet}</div>
+                <div
+                  className="craps-chip-badge total"
+                  id="totalBet"
+                  aria-label={`Total on table: ${totalBet} chips`}
+                  style={{ ["--bank-chip-url" as string]: `url("${chipUrlForTableTotal(totalBet)}")` }}
+                >
+                  {totalBet}
+                </div>
               </div>
             </div>
 
@@ -442,7 +451,14 @@ export default function CrapsPage() {
             <div className="row between">
               <div>
                 <div className="muted small">Bank</div>
-                <div className="craps-chip-badge bank">{bank}</div>
+                <div
+                  className="craps-chip-badge bank"
+                  id="bankLine"
+                  aria-label={`Bank: ${bank} chips`}
+                  style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
+                >
+                  {bank}
+                </div>
               </div>
               <div>
                 <div className="muted small">Payout</div>

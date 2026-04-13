@@ -6,7 +6,9 @@ import { useMe } from "../hooks/useMe";
 import { getOrCreateGuestUsername } from "../utils/guest";
 import { updateCredits } from "../api/credits";
 import { recordGameResult } from "../api/gameResults";
+import { chipUrlForBank } from "../utils/chips";
 import "./Roulette/roulette.css";
+import "../styles/bank-chip.css";
 
 const BANK_KEY = "bjBank";
 const START_BANK = 500;
@@ -222,7 +224,12 @@ export default function RoulettePage() {
             <Link to="/home" className="back-button btn-secondary btn">
               ⮐ Back to Home
             </Link>
-            <div className="roulette-bank-badge" aria-label={`Bank: ${bank} chips`}>
+            <div
+              className="roulette-bank-badge"
+              id="bankBadge"
+              aria-label={`Bank: ${bank} chips`}
+              style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
+            >
               {bank}
             </div>
           </div>
