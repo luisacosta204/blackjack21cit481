@@ -6,6 +6,7 @@ import { useAvatar } from "../hooks/useAvatar";
 import { useMe } from "../hooks/useMe";
 import { getOrCreateGuestUsername } from "../utils/guest";
 import CenteredMain from "../components/CenteredMain";
+import { chipUrlForBank } from "../utils/chips";
 
 
 const AVATAR_OPTIONS = [
@@ -35,10 +36,15 @@ export default function ProfilePage() {
       <HeaderUserNav
         avatarSrc={avatarSrc}
         username={username}
+        const bankValue = user?.credits ?? 0;
         subtitle={
-          <>
-            Credits: <strong>{user ? user.credits : "-"}</strong>
-          </>
+          <span
+            id="bankBadge"
+            aria-label={`Bank: ${bankValue} chips`}
+            style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bankValue)}")` }}
+          >
+            {bankValue}
+          </span>
         }
         right={
           <>

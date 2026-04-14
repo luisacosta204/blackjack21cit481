@@ -264,21 +264,24 @@ export default function SlotsPage() {
     <div className="slots-page">
       {/* Header */}
       <header className="header">
-        <div className="left user-info">
-          <img src={avatarSrc} alt="User avatar" />
+      <div className="left user-info">
+        <img src={avatarSrc} alt="User avatar" />
+        <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
           <span className="username">{username}</span>
+          <span
+            id="bankBadge"
+            aria-label={`Bank: ${bank} chips`}
+            style={{ marginTop: 4, ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
+          >
+            {bank}
+          </span>
         </div>
+      </div>
         <div className="right cluster">
           <button onClick={() => navigate('/home')} className="back-button btn-secondary btn">
             ⮐ Back to Home
           </button>
-          <span
-            className="badge"
-            id="bankBadge"
-            title="Your credits"
-            aria-label={`Bank: ${bank} chips`}
-            style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
-          >{bank}</span>
+          
         </div>
       </header>
 

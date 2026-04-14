@@ -332,23 +332,20 @@ export default function CrapsPage() {
         avatarSrc={avatarSrc}
         username={username}
         subtitle={
-          <>
-            Credits: <strong>{bank}</strong>
-          </>
+          <span
+            id="bankBadge"
+            aria-label={`Bank: ${bank} chips`}
+            style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
+          >
+            {bank}
+          </span>
         }
         right={
           <div className="right cluster craps-header-actions">
             <Link to="/home" className="back-button btn-secondary btn">
               ⮐ Back to Home
             </Link>
-            <div
-              className="craps-bank-badge"
-              id="bankBadge"
-              aria-label={`Bank: ${bank} chips`}
-              style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
-            >
-              {bank}
-            </div>
+            
           </div>
         }
       />

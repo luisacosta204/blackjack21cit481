@@ -6,6 +6,7 @@ import { getOrCreateGuestUsername } from "../utils/guest";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchLeaderboard, type LeaderboardEntry } from "../api/leaderboard";
+import { chipUrlForBank } from "../utils/chips";
 
 export default function LeaderboardPage() {
   const { user } = useMe();
@@ -37,10 +38,15 @@ export default function LeaderboardPage() {
       <HeaderUserNav
         avatarSrc={avatarSrc}
         username={username}
+        const bankValue = user?.credits ?? 0;
         subtitle={
-          <>
-            Credits: <strong>{user ? user.credits : "—"}</strong>
-          </>
+          <span
+            id="bankBadge"
+            aria-label={`Bank: ${bankValue} chips`}
+            style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bankValue)}")` }}
+          >
+            {bankValue}
+          </span>
         }
         right={
           <>

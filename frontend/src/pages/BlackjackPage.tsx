@@ -263,9 +263,13 @@ export default function BlackjackPage() {
         avatarSrc={avatarSrc}
         username={username}
         subtitle={
-          <>
-            Credits: <strong>{creditsText}</strong>
-          </>
+          <span
+            id="bankBadge"
+            aria-label={`Bank: ${bank} chips`}
+            style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
+          >
+            {bank}
+          </span>
         }
         right={
           <div className="right cluster">
@@ -295,16 +299,7 @@ export default function BlackjackPage() {
                 <option value="style_1">Style 1 (Images)</option>
               )}
             </select>
-
-            <span
-              className="badge"
-              id="bankBadge"
-              title="Your chip balance"
-              aria-label={`Bank: ${bank} chips`}
-              style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
-            >
-              {bank}
-            </span>
+            
           </div>
         }
       />

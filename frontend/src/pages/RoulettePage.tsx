@@ -218,20 +218,21 @@ export default function RoulettePage() {
       <HeaderUserNav
         avatarSrc={avatarSrc}
         username={username}
-        subtitle={<>Credits: <strong>{bank}</strong></>}
+        subtitle={
+          <span
+            id="bankBadge"
+            aria-label={`Bank: ${bank} chips`}
+            style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
+          >
+            {bank}
+          </span>
+        }
         right={
           <div className="right cluster roulette-header-actions">
             <Link to="/home" className="back-button btn-secondary btn">
               ⮐ Back to Home
             </Link>
-            <div
-              className="roulette-bank-badge"
-              id="bankBadge"
-              aria-label={`Bank: ${bank} chips`}
-              style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
-            >
-              {bank}
-            </div>
+            
           </div>
         }
       />
