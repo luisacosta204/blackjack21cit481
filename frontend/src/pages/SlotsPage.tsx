@@ -89,6 +89,7 @@ export default function SlotsPage() {
   const [spinning, setSpinning] = useState(false);
   const [status, setStatus] = useState("Set your bet, then press Spin.");
   const [payoutDetails, setPayoutDetails] = useState("No payout yet.");
+  const [reelRenderKey, setReelRenderKey] = useState<number>(0);
 
   const reel1Ref = useRef<HTMLDivElement>(null);
   const reel2Ref = useRef<HTMLDivElement>(null);
