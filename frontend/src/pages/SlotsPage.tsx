@@ -72,6 +72,11 @@ function SymbolImage({
   );
 }
 
+function pluralizeLabel(label: string): string {
+  if (label === "Cherry") return "Cherries";
+  return `${label}s`;
+}
+
 export default function SlotsPage() {
   const navigate = useNavigate();
   const { user } = useMe();
@@ -83,6 +88,7 @@ export default function SlotsPage() {
   const [bet, setBet] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [status, setStatus] = useState("Set your bet, then press Spin.");
+  const [payoutDetails, setPayoutDetails] = useState("No payout yet.");
 
   const reel1Ref = useRef<HTMLDivElement>(null);
   const reel2Ref = useRef<HTMLDivElement>(null);
@@ -114,6 +120,7 @@ export default function SlotsPage() {
     if (spinning) return;
     setBet(0);
     setStatus("Bet cleared. Set your bet, then press Spin.");
+    setPayoutDetails("No payout yet.");
   }
 
   function maxBet() {
@@ -137,6 +144,7 @@ export default function SlotsPage() {
 
     setSpinning(true);
     setStatus("Spinning...");
+    setPayoutDetails("Evaluating payout...");
 
     const newBank = bank - bet;
     setBank(newBank);
@@ -154,7 +162,8 @@ export default function SlotsPage() {
 
     await animateReels(results);
 
-    const payout = evaluateWin(results, bet);
+    const { payout, message } = evaluateWin(results, bet);
+    setPayoutDetails(message);
 
     if (payout > 0) {
       const finalBank = newBank + payout;
@@ -241,22 +250,28 @@ export default function SlotsPage() {
     });
   }
 
-  function evaluateWin(results: SlotSymbol[], stake: number): number {
+  function evaluateWin(results: SlotSymbol[], stake: number): { payout: number; message: string } {
     const [a, b, c] = results;
 
     if (a.id === b.id && b.id === c.id) {
       const mult = PAY_MULT[a.id] || 1;
-      return stake * mult;
+      return {
+        payout: stake * mult,
+        message: `3 ${pluralizeLabel(a.label)} — pays ${mult}x`,
+      };
     }
 
-    if (
-      (a.id === "cherry" && b.id === "cherry") ||
-      (b.id === "cherry" && c.id === "cherry")
-    ) {
-      return stake;
+    if ((a.id === "cherry" && b.id === "cherry") || (b.id === "cherry" && c.id === "cherry")) {
+      return {
+        payout: stake,
+        message: "2 Cherries — pays 1x",
+      };
     }
 
-    return 0;
+    return {
+      payout: 0,
+      message: "No payout",
+    };
   }
 
   function glowReels(win: boolean) {
@@ -324,6 +339,10 @@ export default function SlotsPage() {
               </div>
             </div>
             <div className="payline-marker" aria-hidden="true"></div>
+          </div>
+
+          <div className="slots-payout-popup" role="status" aria-live="polite">
+            {payoutDetails}
           </div>
 
           <div className="toast info mt-6" role="status" aria-live="polite">
