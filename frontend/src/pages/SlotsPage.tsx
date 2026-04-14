@@ -198,56 +198,59 @@ export default function SlotsPage() {
 
   async function animateReels(results: SlotSymbol[]): Promise<void> {
     const reelRefs = [reel1Ref, reel2Ref, reel3Ref];
-
+  
     reelRefs.forEach((ref, i) => {
       if (!ref.current) return;
-
+  
       ref.current.classList.add("spin");
-
+  
       const strip = document.createElement("div");
       strip.className = "symbol-strip";
-
+  
       for (let j = 0; j < 8; j++) {
         const symbol = randomSymbol();
         const symbolEl = document.createElement("div");
         symbolEl.className = "symbol";
-
+  
         const img = document.createElement("img");
         img.src = symbol.image;
         img.alt = symbol.label;
         img.className = "slot-symbol-image";
         img.draggable = false;
-
+  
         symbolEl.appendChild(img);
         strip.appendChild(symbolEl);
       }
-
+  
       const finalSymbolEl = document.createElement("div");
       finalSymbolEl.className = "symbol";
-
+  
       const finalImg = document.createElement("img");
       finalImg.src = results[i].image;
       finalImg.alt = results[i].label;
       finalImg.className = "slot-symbol-image";
       finalImg.draggable = false;
-
+  
       finalSymbolEl.appendChild(finalImg);
       strip.appendChild(finalSymbolEl);
-
+  
       ref.current.innerHTML = "";
       ref.current.appendChild(strip);
-
+  
       const duration = 900 + i * 100;
       ref.current.style.setProperty("--spin-ms", `${duration}ms`);
     });
-
+  
     await new Promise((resolve) => setTimeout(resolve, 1200));
-
-    setReels(results);
-
+  
     reelRefs.forEach((ref) => {
-      if (ref.current) ref.current.classList.remove("spin");
+      if (!ref.current) return;
+      ref.current.classList.remove("spin");
+      ref.current.innerHTML = "";
     });
+  
+    setReels(results);
+    setReelRenderKey((prev) => prev + 1);
   }
 
   function evaluateWin(results: SlotSymbol[], stake: number): { payout: number; message: string } {
@@ -322,17 +325,17 @@ export default function SlotsPage() {
 
           <div className="slot-wrap">
             <div className="reels">
-              <div className="reel" ref={reel1Ref} aria-label="Reel 1">
+              <div key={`reel-1-${reelRenderKey}`} className="reel" ref={reel1Ref} aria-label="Reel 1">
                 <div className="symbol">
                   <SymbolImage symbol={reels[0]} className="slot-symbol-image" />
                 </div>
               </div>
-              <div className="reel" ref={reel2Ref} aria-label="Reel 2">
+              <div key={`reel-2-${reelRenderKey}`} className="reel" ref={reel2Ref} aria-label="Reel 2">
                 <div className="symbol">
                   <SymbolImage symbol={reels[1]} className="slot-symbol-image" />
                 </div>
               </div>
-              <div className="reel" ref={reel3Ref} aria-label="Reel 3">
+              <div key={`reel-3-${reelRenderKey}`} className="reel" ref={reel3Ref} aria-label="Reel 3">
                 <div className="symbol">
                   <SymbolImage symbol={reels[2]} className="slot-symbol-image" />
                 </div>
