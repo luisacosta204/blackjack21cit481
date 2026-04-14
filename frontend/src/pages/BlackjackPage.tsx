@@ -35,7 +35,6 @@ export default function BlackjackPage() {
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
 
   const username = user?.username ?? getOrCreateGuestUsername();
-  const creditsText = user ? String(user.credits ?? 0) : "—";
 
   // ── Deck theme ────────────────────────────────────────────────────────────
   const { textures, backImage, deckId, setDeckId, deckOptions, loading: deckLoading } =
@@ -299,7 +298,7 @@ export default function BlackjackPage() {
                 <option value="style_1">Style 1 (Images)</option>
               )}
             </select>
-            
+
           </div>
         }
       />
