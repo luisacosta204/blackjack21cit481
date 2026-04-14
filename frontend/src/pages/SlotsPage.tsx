@@ -116,12 +116,6 @@ export default function SlotsPage() {
   const [status, setStatus] = useState("Set your bet, then press Spin.");
   const [payoutDetails, setPayoutDetails] = useState("No payout yet.");
 
-  const [results, setResults] = useState<SlotSymbol[]>(() => [
-    randomSymbol(),
-    randomSymbol(),
-    randomSymbol(),
-  ]);
-
   const [reels, setReels] = useState<ReelState[]>(() =>
     [0, 1, 2].map(() =>
       buildReel(randomSymbol(), 1200)
@@ -234,7 +228,6 @@ export default function SlotsPage() {
       }
     }
 
-    setResults(nextResults);
     setReels(nextReels);
     setSpinCycle((prev) => prev + 1);
 
