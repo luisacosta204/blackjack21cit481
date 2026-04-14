@@ -24,7 +24,7 @@ export default function ProfilePage() {
 
   const username = useMemo(() => user?.username ?? getOrCreateGuestUsername(), [user]);
   const emailText = user?.email ?? "you@casino.com";
-  const bankValue = user?.credits ?? 0;
+  const bankValue = Number(localStorage.getItem("bjBank") ?? 500);
 
   const onLogout = () => {
     localStorage.removeItem("token");

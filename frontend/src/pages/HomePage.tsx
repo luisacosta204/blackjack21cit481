@@ -13,7 +13,7 @@ export default function HomePage() {
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
 
   const username = useMemo(() => user?.username ?? getOrCreateGuestUsername(), [user]);
-  const bankValue = user?.credits ?? 0;
+  const bankValue = Number(localStorage.getItem("bjBank") ?? 500);
 
   const onLogout = () => {
     localStorage.removeItem("token");

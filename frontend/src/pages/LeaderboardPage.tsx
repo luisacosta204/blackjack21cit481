@@ -12,7 +12,7 @@ export default function LeaderboardPage() {
   const { user } = useMe();
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
   const username = useMemo(() => user?.username ?? getOrCreateGuestUsername(), [user]);
-  const bankValue = user?.credits ?? 0;
+  const bankValue = Number(localStorage.getItem("bjBank") ?? 500);
 
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
