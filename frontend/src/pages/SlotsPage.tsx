@@ -207,7 +207,7 @@ export default function SlotsPage() {
       const strip = document.createElement("div");
       strip.className = "symbol-strip";
   
-      for (let j = 0; j < 8; j++) {
+      for (let j = 0; j < 6; j++) {
         const symbol = randomSymbol();
         const symbolEl = document.createElement("div");
         symbolEl.className = "symbol";
@@ -221,6 +221,19 @@ export default function SlotsPage() {
         symbolEl.appendChild(img);
         strip.appendChild(symbolEl);
       }
+
+      // Add "near misses" before final symbol
+      const nearSymbol = randomSymbol();
+      const nearEl = document.createElement("div");
+      nearEl.className = "symbol";
+
+      const nearImg = document.createElement("img");
+      nearImg.src = nearSymbol.image;
+      nearImg.alt = nearSymbol.label;
+      nearImg.className = "slot-symbol-image";
+
+      nearEl.appendChild(nearImg);
+      strip.appendChild(nearEl);
   
       const finalSymbolEl = document.createElement("div");
       finalSymbolEl.className = "symbol";
@@ -237,7 +250,7 @@ export default function SlotsPage() {
       ref.current.innerHTML = "";
       ref.current.appendChild(strip);
   
-      const duration = 900 + i * 100;
+      const duration = 1200 + i * 250;
       ref.current.style.setProperty("--spin-ms", `${duration}ms`);
     });
   
