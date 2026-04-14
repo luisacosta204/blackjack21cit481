@@ -6,6 +6,7 @@ import { getOrCreateGuestUsername } from '../utils/guest';
 import { updateCredits } from '../api/credits';
 import { recordGameResult } from '../api/gameResults';
 import { chipUrlForBank } from '../utils/chips';
+import HeaderUserNav from "../components/HeaderUserNav";
 import './Slots/slots.css';
 import '../styles/bank-chip.css';
 
@@ -263,27 +264,24 @@ export default function SlotsPage() {
   return (
     <div className="slots-page">
       {/* Header */}
-      <header className="header">
-      <div className="left user-info">
-        <img src={avatarSrc} alt="User avatar" />
-        <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
-          <span className="username">{username}</span>
+      <HeaderUserNav
+        avatarSrc={avatarSrc}
+        username={username}
+        subtitle={
           <span
             id="bankBadge"
             aria-label={`Bank: ${bank} chips`}
-            style={{ marginTop: 4, ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
+            style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
           >
             {bank}
           </span>
-        </div>
-      </div>
-        <div className="right cluster">
-          <button onClick={() => navigate('/home')} className="back-button btn-secondary btn">
+        }
+        right={
+          <button onClick={() => navigate("/home")} className="back-button btn-secondary btn">
             ⮐ Back to Home
           </button>
-          
-        </div>
-      </header>
+        }
+      />
 
       {/* Main content */}
       <main className="container stack">
