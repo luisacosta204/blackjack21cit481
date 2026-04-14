@@ -89,7 +89,6 @@ export default function SlotsPage() {
   const [spinning, setSpinning] = useState(false);
   const [status, setStatus] = useState("Set your bet, then press Spin.");
   const [payoutDetails, setPayoutDetails] = useState("No payout yet.");
-  const [reelRenderKey, setReelRenderKey] = useState<number>(0);
 
   const reel1Ref = useRef<HTMLDivElement>(null);
   const reel2Ref = useRef<HTMLDivElement>(null);
@@ -244,14 +243,26 @@ export default function SlotsPage() {
   
     await new Promise((resolve) => setTimeout(resolve, 1200));
   
-    reelRefs.forEach((ref) => {
+    reelRefs.forEach((ref, i) => {
       if (!ref.current) return;
+  
       ref.current.classList.remove("spin");
       ref.current.innerHTML = "";
+  
+      const finalSymbolEl = document.createElement("div");
+      finalSymbolEl.className = "symbol";
+  
+      const finalImg = document.createElement("img");
+      finalImg.src = results[i].image;
+      finalImg.alt = results[i].label;
+      finalImg.className = "slot-symbol-image";
+      finalImg.draggable = false;
+  
+      finalSymbolEl.appendChild(finalImg);
+      ref.current.appendChild(finalSymbolEl);
     });
   
     setReels(results);
-    setReelRenderKey((prev) => prev + 1);
   }
 
   function evaluateWin(results: SlotSymbol[], stake: number): { payout: number; message: string } {
@@ -326,17 +337,17 @@ export default function SlotsPage() {
 
           <div className="slot-wrap">
             <div className="reels">
-              <div key={`reel-1-${reelRenderKey}`} className="reel" ref={reel1Ref} aria-label="Reel 1">
+              <div className="reel" ref={reel1Ref} aria-label="Reel 1">
                 <div className="symbol">
                   <SymbolImage symbol={reels[0]} className="slot-symbol-image" />
                 </div>
               </div>
-              <div key={`reel-2-${reelRenderKey}`} className="reel" ref={reel2Ref} aria-label="Reel 2">
+              <div className="reel" ref={reel2Ref} aria-label="Reel 2">
                 <div className="symbol">
                   <SymbolImage symbol={reels[1]} className="slot-symbol-image" />
                 </div>
               </div>
-              <div key={`reel-3-${reelRenderKey}`} className="reel" ref={reel3Ref} aria-label="Reel 3">
+              <div className="reel" ref={reel3Ref} aria-label="Reel 3">
                 <div className="symbol">
                   <SymbolImage symbol={reels[2]} className="slot-symbol-image" />
                 </div>
