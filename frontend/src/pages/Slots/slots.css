@@ -300,12 +300,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 12px;
+  width: 100%;
+  transform: translateY(0);
+}
+
+.symbol-strip-react.spinning {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.2, 0.9, 0.25, 1);
   will-change: transform;
 }
 
-.symbol-strip-react .symbol {
+.symbol-fixed {
   min-height: 96px;
-  height: 96px;
   width: 100%;
   display: grid;
   place-items: center;

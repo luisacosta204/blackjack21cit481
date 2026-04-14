@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HeaderUserNav from "../components/HeaderUserNav";
 import { useMe } from "../hooks/useMe";
@@ -17,10 +17,10 @@ type SlotSymbol = {
   weight: number;
 };
 
-type ReelModel = {
+type ReelState = {
   symbols: SlotSymbol[];
+  stopIndex: number;
   durationMs: number;
-  translateY: number;
 };
 
 const SYMBOLS: SlotSymbol[] = [
@@ -44,7 +44,8 @@ const PAY_MULT: Record<SlotSymbol["id"], number> = {
 const BANK_KEY = "bjBank";
 const START_BANK = 500;
 const REEL_ITEM_HEIGHT = 96;
-const FINAL_INDEX = 7;
+const BASE_REEL_COUNT = 10;
+const STOP_INDEX = BASE_REEL_COUNT - 1;
 
 function loadBank(): number {
   const v = localStorage.getItem(BANK_KEY);
@@ -61,6 +62,28 @@ function randomSymbol(): SlotSymbol {
   }
 
   return SYMBOLS[0];
+}
+
+function pluralizeLabel(label: string): string {
+  if (label === "Cherry") return "Cherries";
+  return `${label}s`;
+}
+
+function buildReel(result: SlotSymbol, durationMs: number): ReelState {
+  const symbols: SlotSymbol[] = [];
+
+  for (let i = 0; i < BASE_REEL_COUNT - 2; i += 1) {
+    symbols.push(randomSymbol());
+  }
+
+  symbols.push(randomSymbol()); // near miss
+  symbols.push(result); // final visible stop
+
+  return {
+    symbols,
+    stopIndex: STOP_INDEX,
+    durationMs,
+  };
 }
 
 function SymbolImage({
@@ -80,31 +103,11 @@ function SymbolImage({
   );
 }
 
-function pluralizeLabel(label: string): string {
-  if (label === "Cherry") return "Cherries";
-  return `${label}s`;
-}
-
-function buildReel(result: SlotSymbol, reelIndex: number): ReelModel {
-  const fillerCount = FINAL_INDEX;
-  const fillers: SlotSymbol[] = Array.from({ length: fillerCount }, () => randomSymbol());
-
-  const nearMiss = randomSymbol();
-  fillers[fillerCount - 1] = nearMiss;
-
-  const symbols = [...fillers, result];
-
-  return {
-    symbols,
-    durationMs: 1200 + reelIndex * 250,
-    translateY: FINAL_INDEX * REEL_ITEM_HEIGHT,
-  };
-}
-
 export default function SlotsPage() {
   const navigate = useNavigate();
   const { user } = useMe();
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
+
   const username = user?.username ?? getOrCreateGuestUsername();
 
   const [bank, setBank] = useState<number>(() => loadBank());
@@ -113,25 +116,19 @@ export default function SlotsPage() {
   const [status, setStatus] = useState("Set your bet, then press Spin.");
   const [payoutDetails, setPayoutDetails] = useState("No payout yet.");
 
-  const initialReels = useMemo(
-    () => [randomSymbol(), randomSymbol(), randomSymbol()],
-    []
+  const [results, setResults] = useState<SlotSymbol[]>(() => [
+    randomSymbol(),
+    randomSymbol(),
+    randomSymbol(),
+  ]);
+
+  const [reels, setReels] = useState<ReelState[]>(() =>
+    [0, 1, 2].map(() =>
+      buildReel(randomSymbol(), 1200)
+    )
   );
 
-  const [results, setResults] = useState<SlotSymbol[]>(initialReels);
-  const [reelModels, setReelModels] = useState<ReelModel[]>(
-    initialReels.map((symbol, i) => ({
-      symbols: [symbol],
-      durationMs: 0,
-      translateY: 0,
-    }))
-  );
-
-  const [spinId, setSpinId] = useState(0);
-
-  const reel1Ref = useRef<HTMLDivElement>(null);
-  const reel2Ref = useRef<HTMLDivElement>(null);
-  const reel3Ref = useRef<HTMLDivElement>(null);
+  const [spinCycle, setSpinCycle] = useState(0);
 
   function saveBank(value: number) {
     localStorage.setItem(BANK_KEY, String(value));
@@ -189,21 +186,18 @@ export default function SlotsPage() {
   }
 
   function glowReels(win: boolean) {
-    const reelRefs = [reel1Ref, reel2Ref, reel3Ref];
+    window.setTimeout(() => {
+      const els = document.querySelectorAll(".slots-page .reel");
+      els.forEach((el) => {
+        el.classList.remove("win-glow", "lose-glow");
+        void (el as HTMLElement).offsetWidth;
+        el.classList.add(win ? "win-glow" : "lose-glow");
+      });
 
-    reelRefs.forEach((ref) => {
-      if (!ref.current) return;
-
-      ref.current.classList.remove("win-glow", "lose-glow");
-      void ref.current.offsetWidth;
-      ref.current.classList.add(win ? "win-glow" : "lose-glow");
-
-      setTimeout(() => {
-        if (ref.current) {
-          ref.current.classList.remove("win-glow", "lose-glow");
-        }
+      window.setTimeout(() => {
+        els.forEach((el) => el.classList.remove("win-glow", "lose-glow"));
       }, 900);
-    });
+    }, 20);
   }
 
   async function spin() {
@@ -216,6 +210,13 @@ export default function SlotsPage() {
       setStatus("Your bet exceeds your credits.");
       return;
     }
+
+    const nextResults: SlotSymbol[] = [randomSymbol(), randomSymbol(), randomSymbol()];
+    const reelDurations = [1200, 1450, 1700];
+    const nextReels: ReelState[] = nextResults.map((result, i) =>
+      buildReel(result, reelDurations[i])
+    );
+    const { payout, message } = evaluateWin(nextResults, bet);
 
     setSpinning(true);
     setStatus("Spinning...");
@@ -233,29 +234,13 @@ export default function SlotsPage() {
       }
     }
 
-    const nextResults: SlotSymbol[] = [randomSymbol(), randomSymbol(), randomSymbol()];
-    const { payout, message } = evaluateWin(nextResults, bet);
-    const nextReelModels = nextResults.map((result, i) => buildReel(result, i));
-
     setResults(nextResults);
+    setReels(nextReels);
+    setSpinCycle((prev) => prev + 1);
+
+    await new Promise((resolve) => setTimeout(resolve, Math.max(...reelDurations) + 100));
+
     setPayoutDetails(message);
-    setSpinId((prev) => prev + 1);
-
-    setReelModels(
-      nextReelModels.map((model) => ({
-        ...model,
-        translateY: 0,
-      }))
-    );
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setReelModels(nextReelModels);
-      });
-    });
-
-    const maxDuration = Math.max(...nextReelModels.map((r) => r.durationMs));
-    await new Promise((resolve) => setTimeout(resolve, maxDuration + 80));
 
     if (payout > 0) {
       const finalBank = newBank + payout;
@@ -288,6 +273,11 @@ export default function SlotsPage() {
     setSpinning(false);
   }
 
+  const reelTranslateY = useMemo(
+    () => reels.map((reel) => -(reel.stopIndex * REEL_ITEM_HEIGHT)),
+    [reels]
+  );
+
   return (
     <div className="slots-page">
       <HeaderUserNav
@@ -318,25 +308,17 @@ export default function SlotsPage() {
 
           <div className="slot-wrap">
             <div className="reels">
-              {[reel1Ref, reel2Ref, reel3Ref].map((ref, reelIndex) => (
-                <div
-                  key={`reel-${reelIndex}-${spinId}`}
-                  className={`reel ${spinning ? "spin" : ""}`}
-                  ref={ref}
-                  aria-label={`Reel ${reelIndex + 1}`}
-                >
+              {reels.map((reel, reelIndex) => (
+                <div className="reel" aria-label={`Reel ${reelIndex + 1}`} key={`reel-${reelIndex}-${spinCycle}`}>
                   <div
-                    className="symbol-strip-react"
+                    className={`symbol-strip-react ${spinning ? "spinning" : ""}`}
                     style={{
-                      transform: `translateY(-${reelModels[reelIndex].translateY}px)`,
-                      transition:
-                        reelModels[reelIndex].durationMs > 0
-                          ? `transform ${reelModels[reelIndex].durationMs}ms cubic-bezier(0.2, 0.9, 0.25, 1)`
-                          : "none",
+                      transform: `translateY(${reelTranslateY[reelIndex]}px)`,
+                      transitionDuration: `${reel.durationMs}ms`,
                     }}
                   >
-                    {reelModels[reelIndex].symbols.map((symbol, symbolIndex) => (
-                      <div className="symbol" key={`${spinId}-${reelIndex}-${symbolIndex}-${symbol.id}`}>
+                    {reel.symbols.map((symbol, symbolIndex) => (
+                      <div className="symbol symbol-fixed" key={`${spinCycle}-${reelIndex}-${symbol.id}-${symbolIndex}`}>
                         <SymbolImage symbol={symbol} className="slot-symbol-image" />
                       </div>
                     ))}
@@ -344,6 +326,7 @@ export default function SlotsPage() {
                 </div>
               ))}
             </div>
+
             <div className="payline-marker" aria-hidden="true"></div>
           </div>
 
