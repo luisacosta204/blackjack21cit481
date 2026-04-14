@@ -43,6 +43,7 @@ const PAY_MULT: Record<SlotSymbol["id"], number> = {
 
 const BANK_KEY = "bjBank";
 const START_BANK = 500;
+
 const REEL_ITEM_HEIGHT = 96;
 const BASE_REEL_COUNT = 10;
 const STOP_INDEX = BASE_REEL_COUNT - 1;
@@ -77,7 +78,7 @@ function buildReel(result: SlotSymbol, durationMs: number): ReelState {
   }
 
   symbols.push(randomSymbol()); // near miss
-  symbols.push(result); // final visible stop
+  symbols.push(result); // final symbol at stop position
 
   return {
     symbols,
@@ -107,7 +108,6 @@ export default function SlotsPage() {
   const navigate = useNavigate();
   const { user } = useMe();
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
-
   const username = user?.username ?? getOrCreateGuestUsername();
 
   const [bank, setBank] = useState<number>(() => loadBank());
@@ -117,9 +117,7 @@ export default function SlotsPage() {
   const [payoutDetails, setPayoutDetails] = useState("No payout yet.");
 
   const [reels, setReels] = useState<ReelState[]>(() =>
-    [0, 1, 2].map(() =>
-      buildReel(randomSymbol(), 1200)
-    )
+    [1200, 1450, 1700].map((duration) => buildReel(randomSymbol(), duration))
   );
 
   const [spinCycle, setSpinCycle] = useState(0);
@@ -228,8 +226,8 @@ export default function SlotsPage() {
       }
     }
 
-    setReels(nextReels);
     setSpinCycle((prev) => prev + 1);
+    setReels(nextReels);
 
     await new Promise((resolve) => setTimeout(resolve, Math.max(...reelDurations) + 100));
 
@@ -307,7 +305,11 @@ export default function SlotsPage() {
           <div className="slot-wrap">
             <div className="reels">
               {reels.map((reel, reelIndex) => (
-                <div className="reel" aria-label={`Reel ${reelIndex + 1}`} key={`reel-${reelIndex}-${spinCycle}`}>
+                <div
+                  className="reel"
+                  aria-label={`Reel ${reelIndex + 1}`}
+                  key={`reel-${reelIndex}-${spinCycle}`}
+                >
                   <div
                     className={`symbol-strip-react ${spinning ? "spinning" : ""}`}
                     style={{
@@ -318,7 +320,10 @@ export default function SlotsPage() {
                     }}
                   >
                     {reel.symbols.map((symbol, symbolIndex) => (
-                      <div className="symbol symbol-fixed" key={`${spinCycle}-${reelIndex}-${symbol.id}-${symbolIndex}`}>
+                      <div
+                        className="symbol symbol-fixed"
+                        key={`${spinCycle}-${reelIndex}-${symbol.id}-${symbolIndex}`}
+                      >
                         <SymbolImage symbol={symbol} className="slot-symbol-image" />
                       </div>
                     ))}
