@@ -20,9 +20,9 @@ export default function HeaderUserNav({ avatarSrc, username, subtitle, right }: 
             </span>
 
             {subtitle && (
-              <span className="panel-subtle" style={{ fontSize: "0.9rem" }}>
+              <div style={{ marginTop: 4 }}>
                 {subtitle}
-              </span>
+              </div>
             )}
           </div>
         </div>
