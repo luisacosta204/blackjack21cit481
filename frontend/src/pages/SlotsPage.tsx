@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HeaderUserNav from "../components/HeaderUserNav";
 import { useMe } from "../hooks/useMe";
@@ -15,6 +15,12 @@ type SlotSymbol = {
   label: string;
   image: string;
   weight: number;
+};
+
+type ReelModel = {
+  symbols: SlotSymbol[];
+  durationMs: number;
+  translateY: number;
 };
 
 const SYMBOLS: SlotSymbol[] = [
@@ -37,6 +43,8 @@ const PAY_MULT: Record<SlotSymbol["id"], number> = {
 
 const BANK_KEY = "bjBank";
 const START_BANK = 500;
+const REEL_ITEM_HEIGHT = 96;
+const FINAL_INDEX = 7;
 
 function loadBank(): number {
   const v = localStorage.getItem(BANK_KEY);
@@ -77,11 +85,26 @@ function pluralizeLabel(label: string): string {
   return `${label}s`;
 }
 
+function buildReel(result: SlotSymbol, reelIndex: number): ReelModel {
+  const fillerCount = FINAL_INDEX;
+  const fillers: SlotSymbol[] = Array.from({ length: fillerCount }, () => randomSymbol());
+
+  const nearMiss = randomSymbol();
+  fillers[fillerCount - 1] = nearMiss;
+
+  const symbols = [...fillers, result];
+
+  return {
+    symbols,
+    durationMs: 1200 + reelIndex * 250,
+    translateY: FINAL_INDEX * REEL_ITEM_HEIGHT,
+  };
+}
+
 export default function SlotsPage() {
   const navigate = useNavigate();
   const { user } = useMe();
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
-
   const username = user?.username ?? getOrCreateGuestUsername();
 
   const [bank, setBank] = useState<number>(() => loadBank());
@@ -90,6 +113,22 @@ export default function SlotsPage() {
   const [status, setStatus] = useState("Set your bet, then press Spin.");
   const [payoutDetails, setPayoutDetails] = useState("No payout yet.");
 
+  const initialReels = useMemo(
+    () => [randomSymbol(), randomSymbol(), randomSymbol()],
+    []
+  );
+
+  const [results, setResults] = useState<SlotSymbol[]>(initialReels);
+  const [reelModels, setReelModels] = useState<ReelModel[]>(
+    initialReels.map((symbol, i) => ({
+      symbols: [symbol],
+      durationMs: 0,
+      translateY: 0,
+    }))
+  );
+
+  const [spinId, setSpinId] = useState(0);
+
   const reel1Ref = useRef<HTMLDivElement>(null);
   const reel2Ref = useRef<HTMLDivElement>(null);
   const reel3Ref = useRef<HTMLDivElement>(null);
@@ -97,12 +136,6 @@ export default function SlotsPage() {
   function saveBank(value: number) {
     localStorage.setItem(BANK_KEY, String(value));
   }
-
-  const [reels, setReels] = useState<SlotSymbol[]>(() => [
-    randomSymbol(),
-    randomSymbol(),
-    randomSymbol(),
-  ]);
 
   function addChip(amount: number) {
     if (spinning) return;
@@ -131,155 +164,8 @@ export default function SlotsPage() {
     setStatus(`Bet: ${newBet} credits. Press Spin!`);
   }
 
-  async function spin() {
-    if (spinning) return;
-    if (bet <= 0) {
-      setStatus("Please place a bet first.");
-      return;
-    }
-    if (bet > bank) {
-      setStatus("Your bet exceeds your credits.");
-      return;
-    }
-
-    setSpinning(true);
-    setStatus("Spinning...");
-    setPayoutDetails("Evaluating payout...");
-
-    const newBank = bank - bet;
-    setBank(newBank);
-    saveBank(newBank);
-
-    if (user) {
-      try {
-        await updateCredits(newBank);
-      } catch (err) {
-        console.error("Failed to update credits:", err);
-      }
-    }
-
-    const results = [randomSymbol(), randomSymbol(), randomSymbol()];
-
-    await animateReels(results);
-
-    const { payout, message } = evaluateWin(results, bet);
-    setPayoutDetails(message);
-
-    if (payout > 0) {
-      const finalBank = newBank + payout;
-      setBank(finalBank);
-      saveBank(finalBank);
-      setStatus(`You won ${payout} credits!`);
-      glowReels(true);
-
-      if (user) {
-        try {
-          await updateCredits(finalBank);
-          await recordGameResult({ won: true, delta: payout - bet });
-        } catch (err) {
-          console.error("Failed to record win:", err);
-        }
-      }
-    } else {
-      setStatus("No win. Try again!");
-      glowReels(false);
-
-      if (user) {
-        try {
-          await recordGameResult({ won: false, delta: -bet });
-        } catch (err) {
-          console.error("Failed to record loss:", err);
-        }
-      }
-    }
-
-    setSpinning(false);
-  }
-
-  async function animateReels(results: SlotSymbol[]): Promise<void> {
-    const reelRefs = [reel1Ref, reel2Ref, reel3Ref];
-  
-    reelRefs.forEach((ref, i) => {
-      if (!ref.current) return;
-  
-      ref.current.classList.add("spin");
-  
-      const strip = document.createElement("div");
-      strip.className = "symbol-strip";
-  
-      for (let j = 0; j < 6; j++) {
-        const symbol = randomSymbol();
-        const symbolEl = document.createElement("div");
-        symbolEl.className = "symbol";
-  
-        const img = document.createElement("img");
-        img.src = symbol.image;
-        img.alt = symbol.label;
-        img.className = "slot-symbol-image";
-        img.draggable = false;
-  
-        symbolEl.appendChild(img);
-        strip.appendChild(symbolEl);
-      }
-
-      // Add "near misses" before final symbol
-      const nearSymbol = randomSymbol();
-      const nearEl = document.createElement("div");
-      nearEl.className = "symbol";
-
-      const nearImg = document.createElement("img");
-      nearImg.src = nearSymbol.image;
-      nearImg.alt = nearSymbol.label;
-      nearImg.className = "slot-symbol-image";
-
-      nearEl.appendChild(nearImg);
-      strip.appendChild(nearEl);
-  
-      const finalSymbolEl = document.createElement("div");
-      finalSymbolEl.className = "symbol";
-  
-      const finalImg = document.createElement("img");
-      finalImg.src = results[i].image;
-      finalImg.alt = results[i].label;
-      finalImg.className = "slot-symbol-image";
-      finalImg.draggable = false;
-  
-      finalSymbolEl.appendChild(finalImg);
-      strip.appendChild(finalSymbolEl);
-  
-      ref.current.innerHTML = "";
-      ref.current.appendChild(strip);
-  
-      const duration = 1200 + i * 250;
-      ref.current.style.setProperty("--spin-ms", `${duration}ms`);
-    });
-  
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-  
-    reelRefs.forEach((ref, i) => {
-      if (!ref.current) return;
-  
-      ref.current.classList.remove("spin");
-      ref.current.innerHTML = "";
-  
-      const finalSymbolEl = document.createElement("div");
-      finalSymbolEl.className = "symbol";
-  
-      const finalImg = document.createElement("img");
-      finalImg.src = results[i].image;
-      finalImg.alt = results[i].label;
-      finalImg.className = "slot-symbol-image";
-      finalImg.draggable = false;
-  
-      finalSymbolEl.appendChild(finalImg);
-      ref.current.appendChild(finalSymbolEl);
-    });
-  
-    setReels(results);
-  }
-
-  function evaluateWin(results: SlotSymbol[], stake: number): { payout: number; message: string } {
-    const [a, b, c] = results;
+  function evaluateWin(spinResults: SlotSymbol[], stake: number): { payout: number; message: string } {
+    const [a, b, c] = spinResults;
 
     if (a.id === b.id && b.id === c.id) {
       const mult = PAY_MULT[a.id] || 1;
@@ -320,6 +206,88 @@ export default function SlotsPage() {
     });
   }
 
+  async function spin() {
+    if (spinning) return;
+    if (bet <= 0) {
+      setStatus("Please place a bet first.");
+      return;
+    }
+    if (bet > bank) {
+      setStatus("Your bet exceeds your credits.");
+      return;
+    }
+
+    setSpinning(true);
+    setStatus("Spinning...");
+    setPayoutDetails("Evaluating payout...");
+
+    const newBank = bank - bet;
+    setBank(newBank);
+    saveBank(newBank);
+
+    if (user) {
+      try {
+        await updateCredits(newBank);
+      } catch (err) {
+        console.error("Failed to update credits:", err);
+      }
+    }
+
+    const nextResults: SlotSymbol[] = [randomSymbol(), randomSymbol(), randomSymbol()];
+    const { payout, message } = evaluateWin(nextResults, bet);
+    const nextReelModels = nextResults.map((result, i) => buildReel(result, i));
+
+    setResults(nextResults);
+    setPayoutDetails(message);
+    setSpinId((prev) => prev + 1);
+
+    setReelModels(
+      nextReelModels.map((model) => ({
+        ...model,
+        translateY: 0,
+      }))
+    );
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setReelModels(nextReelModels);
+      });
+    });
+
+    const maxDuration = Math.max(...nextReelModels.map((r) => r.durationMs));
+    await new Promise((resolve) => setTimeout(resolve, maxDuration + 80));
+
+    if (payout > 0) {
+      const finalBank = newBank + payout;
+      setBank(finalBank);
+      saveBank(finalBank);
+      setStatus(`You won ${payout} credits!`);
+      glowReels(true);
+
+      if (user) {
+        try {
+          await updateCredits(finalBank);
+          await recordGameResult({ won: true, delta: payout - bet });
+        } catch (err) {
+          console.error("Failed to record win:", err);
+        }
+      }
+    } else {
+      setStatus("No win. Try again!");
+      glowReels(false);
+
+      if (user) {
+        try {
+          await recordGameResult({ won: false, delta: -bet });
+        } catch (err) {
+          console.error("Failed to record loss:", err);
+        }
+      }
+    }
+
+    setSpinning(false);
+  }
+
   return (
     <div className="slots-page">
       <HeaderUserNav
@@ -350,21 +318,31 @@ export default function SlotsPage() {
 
           <div className="slot-wrap">
             <div className="reels">
-              <div className="reel" ref={reel1Ref} aria-label="Reel 1">
-                <div className="symbol">
-                  <SymbolImage symbol={reels[0]} className="slot-symbol-image" />
+              {[reel1Ref, reel2Ref, reel3Ref].map((ref, reelIndex) => (
+                <div
+                  key={`reel-${reelIndex}-${spinId}`}
+                  className={`reel ${spinning ? "spin" : ""}`}
+                  ref={ref}
+                  aria-label={`Reel ${reelIndex + 1}`}
+                >
+                  <div
+                    className="symbol-strip-react"
+                    style={{
+                      transform: `translateY(-${reelModels[reelIndex].translateY}px)`,
+                      transition:
+                        reelModels[reelIndex].durationMs > 0
+                          ? `transform ${reelModels[reelIndex].durationMs}ms cubic-bezier(0.2, 0.9, 0.25, 1)`
+                          : "none",
+                    }}
+                  >
+                    {reelModels[reelIndex].symbols.map((symbol, symbolIndex) => (
+                      <div className="symbol" key={`${spinId}-${reelIndex}-${symbolIndex}-${symbol.id}`}>
+                        <SymbolImage symbol={symbol} className="slot-symbol-image" />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="reel" ref={reel2Ref} aria-label="Reel 2">
-                <div className="symbol">
-                  <SymbolImage symbol={reels[1]} className="slot-symbol-image" />
-                </div>
-              </div>
-              <div className="reel" ref={reel3Ref} aria-label="Reel 3">
-                <div className="symbol">
-                  <SymbolImage symbol={reels[2]} className="slot-symbol-image" />
-                </div>
-              </div>
+              ))}
             </div>
             <div className="payline-marker" aria-hidden="true"></div>
           </div>
