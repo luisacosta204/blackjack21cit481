@@ -12,6 +12,7 @@ export default function LeaderboardPage() {
   const { user } = useMe();
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
   const username = useMemo(() => user?.username ?? getOrCreateGuestUsername(), [user]);
+  const bankValue = user?.credits ?? 0;
 
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +39,6 @@ export default function LeaderboardPage() {
       <HeaderUserNav
         avatarSrc={avatarSrc}
         username={username}
-        const bankValue = user?.credits ?? 0;
         subtitle={
           <span
             id="bankBadge"
@@ -85,14 +85,17 @@ export default function LeaderboardPage() {
                 <tbody>
                   {leaderboard.map((entry, index) => (
                     <tr key={entry.username}>
-                      <td><strong>#{index + 1}</strong></td>
+                      <td>
+                        <strong>#{index + 1}</strong>
+                      </td>
                       <td>{entry.username}</td>
                       <td>{entry.total_games}</td>
                       <td className="text-success">{entry.wins}</td>
                       <td className="text-danger">{entry.losses}</td>
                       <td>
                         <strong className={entry.net_winnings >= 0 ? "text-success" : "text-danger"}>
-                          {entry.net_winnings >= 0 ? "+" : ""}{entry.net_winnings}
+                          {entry.net_winnings >= 0 ? "+" : ""}
+                          {entry.net_winnings}
                         </strong>
                       </td>
                     </tr>

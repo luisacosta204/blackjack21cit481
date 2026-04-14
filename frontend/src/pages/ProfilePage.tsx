@@ -8,7 +8,6 @@ import { getOrCreateGuestUsername } from "../utils/guest";
 import CenteredMain from "../components/CenteredMain";
 import { chipUrlForBank } from "../utils/chips";
 
-
 const AVATAR_OPTIONS = [
   { src: "/assets/avatars/Flower.png", alt: "Flower" },
   { src: "/assets/avatars/Hot Streak.png", alt: "Hot Streak" },
@@ -25,6 +24,7 @@ export default function ProfilePage() {
 
   const username = useMemo(() => user?.username ?? getOrCreateGuestUsername(), [user]);
   const emailText = user?.email ?? "you@casino.com";
+  const bankValue = user?.credits ?? 0;
 
   const onLogout = () => {
     localStorage.removeItem("token");
@@ -36,7 +36,6 @@ export default function ProfilePage() {
       <HeaderUserNav
         avatarSrc={avatarSrc}
         username={username}
-        const bankValue = user?.credits ?? 0;
         subtitle={
           <span
             id="bankBadge"

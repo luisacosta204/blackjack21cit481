@@ -7,14 +7,13 @@ import { getOrCreateGuestUsername } from "../utils/guest";
 import CenteredMain from "../components/CenteredMain";
 import { chipUrlForBank } from "../utils/chips";
 
-
 export default function HomePage() {
   const navigate = useNavigate();
   const { user, loading } = useMe();
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
 
   const username = useMemo(() => user?.username ?? getOrCreateGuestUsername(), [user]);
-  const creditsText = user ? String(user.credits) : "—";
+  const bankValue = user?.credits ?? 0;
 
   const onLogout = () => {
     localStorage.removeItem("token");
@@ -26,7 +25,6 @@ export default function HomePage() {
       <HeaderUserNav
         avatarSrc={avatarSrc}
         username={username}
-        const bankValue = user?.credits ?? 0;
         subtitle={
           <span
             id="bankBadge"
@@ -55,13 +53,15 @@ export default function HomePage() {
         }
       />
 
-
       <CenteredMain maxWidth={900}>
         <div style={{ textAlign: "center" }}>
           <h2 className="panel-header">Welcome to the Casino Lobby</h2>
           <p className="panel-subtle">Choose a game mode or view your stats below.</p>
 
-          <div className="grid cols-2" style={{ maxWidth: 720, marginTop: "2rem", marginInline: "auto" }}>
+          <div
+            className="grid cols-2"
+            style={{ maxWidth: 720, marginTop: "2rem", marginInline: "auto" }}
+          >
             <Link to="/blackjack" className="btn">
               🂡 Play Blackjack
             </Link>
@@ -89,7 +89,6 @@ export default function HomePage() {
           </div>
         </div>
       </CenteredMain>
-
     </>
   );
 }
