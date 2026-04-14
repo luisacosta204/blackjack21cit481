@@ -302,7 +302,7 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  transform: translateY(0);
+  transition-property: none;
 }
 
 .symbol-strip-react.spinning {

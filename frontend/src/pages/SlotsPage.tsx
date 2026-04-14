@@ -267,7 +267,12 @@ export default function SlotsPage() {
   }
 
   const reelTranslateY = useMemo(
-    () => reels.map((reel) => -(reel.stopIndex * REEL_ITEM_HEIGHT)),
+    () =>
+      reels.map((reel) => {
+        const endY = -(reel.stopIndex * REEL_ITEM_HEIGHT);
+        const startY = endY - REEL_ITEM_HEIGHT * 6;
+        return { startY, endY };
+      }),
     [reels]
   );
 
@@ -306,7 +311,9 @@ export default function SlotsPage() {
                   <div
                     className={`symbol-strip-react ${spinning ? "spinning" : ""}`}
                     style={{
-                      transform: `translateY(${reelTranslateY[reelIndex]}px)`,
+                      transform: spinning
+                        ? `translateY(${reelTranslateY[reelIndex].endY}px)`
+                        : `translateY(${reelTranslateY[reelIndex].startY}px)`,
                       transitionDuration: `${reel.durationMs}ms`,
                     }}
                   >
