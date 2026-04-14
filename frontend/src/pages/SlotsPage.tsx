@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HeaderUserNav from "../components/HeaderUserNav";
 import { useMe } from "../hooks/useMe";
@@ -10,105 +10,108 @@ import { chipUrlForBank } from "../utils/chips";
 import "./Slots/slots.css";
 import "../styles/bank-chip.css";
 
-type SlotSymbol = {
-  id: "cherry" | "lemon" | "star" | "bell" | "seven" | "diamond";
-  label: string;
-  image: string;
+type SymbolGlyph = "🍒" | "🍋" | "⭐" | "🔔" | "7️⃣" | "💎";
+
+type SymbolDef = {
+  glyph: SymbolGlyph;
   weight: number;
 };
 
-type ReelState = {
-  symbols: SlotSymbol[];
-  stopIndex: number;
-  durationMs: number;
-};
-
-const SYMBOLS: SlotSymbol[] = [
-  { id: "cherry", label: "Cherry", image: "/assets/slots/neon/cherry.png", weight: 24 },
-  { id: "lemon", label: "Lemon", image: "/assets/slots/neon/lemon.png", weight: 18 },
-  { id: "star", label: "Star", image: "/assets/slots/neon/star.png", weight: 12 },
-  { id: "bell", label: "Bell", image: "/assets/slots/neon/bell.png", weight: 8 },
-  { id: "seven", label: "Seven", image: "/assets/slots/neon/seven.png", weight: 6 },
-  { id: "diamond", label: "Diamond", image: "/assets/slots/neon/diamond.png", weight: 3 },
+const SYMBOLS: SymbolDef[] = [
+  { glyph: "🍒", weight: 24 },
+  { glyph: "🍋", weight: 18 },
+  { glyph: "⭐", weight: 12 },
+  { glyph: "🔔", weight: 8 },
+  { glyph: "7️⃣", weight: 6 },
+  { glyph: "💎", weight: 3 },
 ];
 
-const PAY_MULT: Record<SlotSymbol["id"], number> = {
-  diamond: 50,
-  seven: 25,
-  bell: 10,
-  star: 8,
-  lemon: 5,
-  cherry: 3,
+const PAY_MULT: Record<SymbolGlyph, number> = {
+  "💎": 50,
+  "7️⃣": 25,
+  "🔔": 10,
+  "⭐": 8,
+  "🍋": 5,
+  "🍒": 3,
+};
+
+const PACK_MAP: Record<SymbolGlyph, string> = {
+  "🍒": "/assets/slots/neon/cherry.png",
+  "🍋": "/assets/slots/neon/lemon.png",
+  "⭐": "/assets/slots/neon/star.png",
+  "🔔": "/assets/slots/neon/bell.png",
+  "7️⃣": "/assets/slots/neon/seven.png",
+  "💎": "/assets/slots/neon/diamond.png",
+};
+
+const LABEL_MAP: Record<SymbolGlyph, string> = {
+  "🍒": "Cherry",
+  "🍋": "Lemon",
+  "⭐": "Star",
+  "🔔": "Bell",
+  "7️⃣": "Seven",
+  "💎": "Diamond",
 };
 
 const BANK_KEY = "bjBank";
 const START_BANK = 500;
 
-const REEL_ITEM_HEIGHT = 96;
-const BASE_REEL_COUNT = 10;
-const STOP_INDEX = BASE_REEL_COUNT - 1;
-
 function loadBank(): number {
-  const v = localStorage.getItem(BANK_KEY);
-  return Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : START_BANK;
+  const raw = localStorage.getItem(BANK_KEY);
+  const value = raw == null ? NaN : Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : START_BANK;
 }
 
-function randomSymbol(): SlotSymbol {
-  const totalWeight = SYMBOLS.reduce((sum, s) => sum + s.weight, 0);
-  let random = Math.random() * totalWeight;
-
-  for (const symbol of SYMBOLS) {
-    random -= symbol.weight;
-    if (random <= 0) return symbol;
+function randSymbol(): SymbolGlyph {
+  const total = SYMBOLS.reduce((sum, item) => sum + item.weight, 0);
+  let r = Math.random() * total;
+  for (const item of SYMBOLS) {
+    r -= item.weight;
+    if (r <= 0) return item.glyph;
   }
+  return SYMBOLS[0].glyph;
+}
 
-  return SYMBOLS[0];
+function glyphToLabel(glyph: SymbolGlyph): string {
+  return LABEL_MAP[glyph];
 }
 
 function pluralizeLabel(label: string): string {
-  if (label === "Cherry") return "Cherries";
-  return `${label}s`;
+  return label === "Cherry" ? "Cherries" : `${label}s`;
 }
 
-function buildReel(result: SlotSymbol, durationMs: number): ReelState {
-  const symbols: SlotSymbol[] = [];
+function createSymbolNode(glyph: SymbolGlyph): HTMLDivElement {
+  const el = document.createElement("div");
+  el.className = "symbol";
+  el.dataset.glyph = glyph;
 
-  for (let i = 0; i < BASE_REEL_COUNT - 2; i += 1) {
-    symbols.push(randomSymbol());
+  const img = document.createElement("img");
+  img.src = PACK_MAP[glyph];
+  img.alt = glyphToLabel(glyph);
+  img.draggable = false;
+
+  el.appendChild(img);
+  return el;
+}
+
+function buildStrip(finalGlyph: SymbolGlyph): HTMLDivElement {
+  const strip = document.createElement("div");
+  strip.className = "symbol-strip";
+  const count = 8;
+
+  for (let i = 0; i < count; i += 1) {
+    strip.appendChild(createSymbolNode(randSymbol()));
   }
 
-  symbols.push(randomSymbol()); // near miss
-  symbols.push(result); // final symbol at stop position
-
-  return {
-    symbols,
-    stopIndex: STOP_INDEX,
-    durationMs,
-  };
-}
-
-function SymbolImage({
-  symbol,
-  className = "",
-}: {
-  symbol: SlotSymbol;
-  className?: string;
-}) {
-  return (
-    <img
-      src={symbol.image}
-      alt={symbol.label}
-      className={className}
-      draggable={false}
-    />
-  );
+  strip.appendChild(createSymbolNode(finalGlyph));
+  return strip;
 }
 
 export default function SlotsPage() {
   const navigate = useNavigate();
   const { user } = useMe();
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
-  const username = user?.username ?? getOrCreateGuestUsername();
+  const username = useMemo(() => user?.username ?? getOrCreateGuestUsername(), [user]);
 
   const [bank, setBank] = useState<number>(() => loadBank());
   const [bet, setBet] = useState(0);
@@ -116,55 +119,48 @@ export default function SlotsPage() {
   const [status, setStatus] = useState("Set your bet, then press Spin.");
   const [payoutDetails, setPayoutDetails] = useState("No payout yet.");
 
-  const [reels, setReels] = useState<ReelState[]>(() =>
-    [1200, 1450, 1700].map((duration) => buildReel(randomSymbol(), duration))
-  );
+  const reel1Ref = useRef<HTMLDivElement>(null);
+  const reel2Ref = useRef<HTMLDivElement>(null);
+  const reel3Ref = useRef<HTMLDivElement>(null);
 
-  const [spinCycle, setSpinCycle] = useState(0);
+  const reelEls = [reel1Ref, reel2Ref, reel3Ref];
 
-  function saveBank(value: number) {
+  function saveBank(value: number): void {
     localStorage.setItem(BANK_KEY, String(value));
   }
 
-  function addChip(amount: number) {
-    if (spinning) return;
-    if (bank <= 0) {
-      setStatus("No credits available!");
-      return;
-    }
-
-    const newBet = Math.min(bank, bet + amount);
-    setBet(newBet);
-    setStatus(`Bet: ${newBet} credits. Press Spin!`);
+  function renderStatic(glyphs: SymbolGlyph[]): void {
+    reelEls.forEach((ref, i) => {
+      const el = ref.current;
+      if (!el) return;
+      el.innerHTML = "";
+      el.appendChild(createSymbolNode(glyphs[i]));
+    });
   }
 
-  function clearBet() {
-    if (spinning) return;
-    setBet(0);
-    setStatus("Bet cleared. Set your bet, then press Spin.");
-    setPayoutDetails("No payout yet.");
+  function centerSymbol(el: HTMLDivElement): SymbolGlyph | null {
+    const rect = el.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const found = document.elementFromPoint(x, y) as HTMLElement | null;
+    const sym = found?.closest?.(".symbol") as HTMLElement | null;
+    const glyph = sym?.dataset?.glyph;
+    return glyph && glyph in PACK_MAP ? (glyph as SymbolGlyph) : null;
   }
 
-  function maxBet() {
-    if (spinning) return;
-    const cap = 100;
-    const newBet = Math.min(bank, cap);
-    setBet(newBet);
-    setStatus(`Bet: ${newBet} credits. Press Spin!`);
-  }
+  function evaluate(landed: SymbolGlyph[], stake: number): { payout: number; message: string } {
+    const [a, b, c] = landed;
 
-  function evaluateWin(spinResults: SlotSymbol[], stake: number): { payout: number; message: string } {
-    const [a, b, c] = spinResults;
-
-    if (a.id === b.id && b.id === c.id) {
-      const mult = PAY_MULT[a.id] || 1;
+    if (a === b && b === c) {
+      const mult = PAY_MULT[a] ?? 0;
       return {
         payout: stake * mult,
-        message: `3 ${pluralizeLabel(a.label)} — pays ${mult}x`,
+        message: `3 ${pluralizeLabel(glyphToLabel(a))} — pays ${mult}x`,
       };
     }
 
-    if ((a.id === "cherry" && b.id === "cherry") || (b.id === "cherry" && c.id === "cherry")) {
+    const cherries = landed.filter((g) => g === "🍒").length;
+    if (cherries >= 2) {
       return {
         payout: stake,
         message: "2 Cherries — pays 1x",
@@ -177,67 +173,117 @@ export default function SlotsPage() {
     };
   }
 
-  function glowReels(win: boolean) {
-    window.setTimeout(() => {
-      const els = document.querySelectorAll(".slots-page .reel");
-      els.forEach((el) => {
-        el.classList.remove("win-glow", "lose-glow");
-        void (el as HTMLElement).offsetWidth;
-        el.classList.add(win ? "win-glow" : "lose-glow");
-      });
-
-      window.setTimeout(() => {
-        els.forEach((el) => el.classList.remove("win-glow", "lose-glow"));
-      }, 900);
-    }, 20);
+  function glowReels(win: boolean): void {
+    reelEls.forEach((ref) => {
+      const el = ref.current;
+      if (!el) return;
+      el.classList.remove("win-glow", "lose-glow");
+      void el.offsetWidth;
+      el.classList.add(win ? "win-glow" : "lose-glow");
+      window.setTimeout(() => el.classList.remove("win-glow", "lose-glow"), 900);
+    });
   }
 
-  async function spin() {
+  async function animateReels(plannedFinals: SymbolGlyph[]): Promise<SymbolGlyph[]> {
+    const durations = [900, 1050, 1200];
+
+    return await new Promise<SymbolGlyph[]>((resolve) => {
+      let done = 0;
+      const landed: SymbolGlyph[] = new Array(reelEls.length) as SymbolGlyph[];
+
+      reelEls.forEach((ref, i) => {
+        const el = ref.current;
+        if (!el) {
+          landed[i] = plannedFinals[i];
+          done += 1;
+          if (done === reelEls.length) resolve(landed);
+          return;
+        }
+
+        const strip = buildStrip(plannedFinals[i]);
+        strip.style.setProperty("--spin-ms", `${durations[i]}ms`);
+        el.innerHTML = "";
+        el.appendChild(strip);
+        el.classList.add("spin");
+
+        window.setTimeout(() => {
+          const seen = centerSymbol(el) ?? plannedFinals[i];
+          el.classList.remove("spin");
+          el.innerHTML = "";
+          el.appendChild(createSymbolNode(seen));
+
+          landed[i] = seen;
+          done += 1;
+          if (done === reelEls.length) resolve(landed);
+        }, durations[i] + 30);
+      });
+    });
+  }
+
+  function addChip(amount: number): void {
+    if (spinning) return;
+    if (bank <= 0) {
+      setStatus("No credits available!");
+      return;
+    }
+    const newBet = Math.min(bank, bet + amount);
+    setBet(newBet);
+    setStatus(`Bet: ${newBet} credits. Press Spin!`);
+  }
+
+  function clearBet(): void {
+    if (spinning) return;
+    setBet(0);
+    setStatus("Bet cleared. Set your bet, then press Spin.");
+    setPayoutDetails("No payout yet.");
+  }
+
+  function maxBet(): void {
+    if (spinning) return;
+    const cap = 100;
+    const newBet = Math.min(bank, cap);
+    setBet(newBet);
+    setStatus(`Bet: ${newBet} credits. Press Spin!`);
+  }
+
+  async function onSpin(): Promise<void> {
     if (spinning) return;
     if (bet <= 0) {
       setStatus("Please place a bet first.");
       return;
     }
     if (bet > bank) {
-      setStatus("Your bet exceeds your credits.");
+      setStatus("Your bet exceeds your bank.");
       return;
     }
-
-    const nextResults: SlotSymbol[] = [randomSymbol(), randomSymbol(), randomSymbol()];
-    const reelDurations = [1200, 1450, 1700];
-    const nextReels: ReelState[] = nextResults.map((result, i) =>
-      buildReel(result, reelDurations[i])
-    );
-    const { payout, message } = evaluateWin(nextResults, bet);
 
     setSpinning(true);
     setStatus("Spinning...");
     setPayoutDetails("Evaluating payout...");
 
-    const newBank = bank - bet;
-    setBank(newBank);
-    saveBank(newBank);
+    const bankAfterStake = bank - bet;
+    setBank(bankAfterStake);
+    saveBank(bankAfterStake);
 
     if (user) {
       try {
-        await updateCredits(newBank);
+        await updateCredits(bankAfterStake);
       } catch (err) {
         console.error("Failed to update credits:", err);
       }
     }
 
-    setSpinCycle((prev) => prev + 1);
-    setReels(nextReels);
-
-    await new Promise((resolve) => setTimeout(resolve, Math.max(...reelDurations) + 100));
+    const planned = [randSymbol(), randSymbol(), randSymbol()] as SymbolGlyph[];
+    const landed = await animateReels(planned);
+    const { payout, message } = evaluate(landed, bet);
 
     setPayoutDetails(message);
 
     if (payout > 0) {
-      const finalBank = newBank + payout;
+      const finalBank = bankAfterStake + payout;
       setBank(finalBank);
       saveBank(finalBank);
-      setStatus(`You won ${payout} credits!`);
+      setStatus(`You won ${payout} chips!`);
       glowReels(true);
 
       if (user) {
@@ -264,15 +310,9 @@ export default function SlotsPage() {
     setSpinning(false);
   }
 
-  const reelTranslateY = useMemo(
-    () =>
-      reels.map((reel) => {
-        const endY = -(reel.stopIndex * REEL_ITEM_HEIGHT);
-        const startY = endY - REEL_ITEM_HEIGHT * 6;
-        return { startY, endY };
-      }),
-    [reels]
-  );
+  useEffect(() => {
+    renderStatic([randSymbol(), randSymbol(), randSymbol()]);
+  }, []);
 
   return (
     <div className="slots-page">
@@ -304,35 +344,11 @@ export default function SlotsPage() {
 
           <div className="slot-wrap">
             <div className="reels">
-              {reels.map((reel, reelIndex) => (
-                <div
-                  className="reel"
-                  aria-label={`Reel ${reelIndex + 1}`}
-                  key={`reel-${reelIndex}-${spinCycle}`}
-                >
-                  <div
-                    className={`symbol-strip-react ${spinning ? "spinning" : ""}`}
-                    style={{
-                      transform: spinning
-                        ? `translateY(${reelTranslateY[reelIndex].endY}px)`
-                        : `translateY(${reelTranslateY[reelIndex].startY}px)`,
-                      transitionDuration: `${reel.durationMs}ms`,
-                    }}
-                  >
-                    {reel.symbols.map((symbol, symbolIndex) => (
-                      <div
-                        className="symbol symbol-fixed"
-                        key={`${spinCycle}-${reelIndex}-${symbol.id}-${symbolIndex}`}
-                      >
-                        <SymbolImage symbol={symbol} className="slot-symbol-image" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+              <div className="reel" id="reel1" ref={reel1Ref} aria-label="Reel 1" />
+              <div className="reel" id="reel2" ref={reel2Ref} aria-label="Reel 2" />
+              <div className="reel" id="reel3" ref={reel3Ref} aria-label="Reel 3" />
             </div>
-
-            <div className="payline-marker" aria-hidden="true"></div>
+            <div className="payline-marker" aria-hidden="true" />
           </div>
 
           <div className="slots-payout-popup" role="status" aria-live="polite">
@@ -347,14 +363,9 @@ export default function SlotsPage() {
         <div className="grid cols-2">
           <div className="panel">
             <h3 className="panel-header">Betting</h3>
-            <p className="panel-subtle">Add chips to your bet, then Spin.</p>
+            <p className="panel-subtle">Choose your wager per spin.</p>
 
-            <div className="bet-line">
-              <span className="muted">Bet:</span>
-              <strong id="betAmount">{bet}</strong>
-            </div>
-
-            <div className="cluster bj-chips" style={{ marginTop: "16px" }}>
+            <div className="cluster">
               <button className="chip-btn chip-5" title="+5" onClick={() => addChip(5)} disabled={spinning}>
                 +5
               </button>
@@ -364,87 +375,72 @@ export default function SlotsPage() {
               <button className="chip-btn chip-100" title="+100" onClick={() => addChip(100)} disabled={spinning}>
                 +100
               </button>
+              <button className="btn-ghost btn" onClick={clearBet} disabled={spinning}>
+                Clear
+              </button>
             </div>
 
-            <div className="btn-row" style={{ marginTop: "16px", display: "flex", gap: "8px" }}>
-              <button className="btn btn-secondary" onClick={clearBet} disabled={spinning}>
-                Clear Bet
+            <div className="bet-line mt-4">
+              <span className="muted">Bet per Spin:</span>
+              <strong id="betAmount">{bet}</strong>
+            </div>
+
+            <div className="cluster mt-6">
+              <button className="btn" onClick={() => void onSpin()} disabled={spinning || bet <= 0}>
+                {spinning ? "Spinning..." : "Spin"}
               </button>
-              <button className="btn btn-secondary" onClick={maxBet} disabled={spinning}>
+              <button className="btn-secondary btn" onClick={maxBet} disabled={spinning}>
                 Max Bet
+              </button>
+              <button
+                className="btn-danger btn"
+                onClick={() => {
+                  if (spinning) return;
+                  setBank(START_BANK);
+                  saveBank(START_BANK);
+                  setStatus("Bank reset to 500 chips.");
+                }}
+                disabled={spinning}
+              >
+                Reset Bank
               </button>
             </div>
           </div>
 
           <div className="panel">
-            <h3 className="panel-header">Paytable</h3>
-            <div className="paytable">
-              <div className="pay-row">
-                <span className="pay-symbol-group">
-                  <img src="/assets/slots/neon/diamond.png" alt="Diamond" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/diamond.png" alt="Diamond" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/diamond.png" alt="Diamond" className="paytable-symbol-image" />
-                </span>
-                <span>50x</span>
-              </div>
-              <div className="pay-row">
-                <span className="pay-symbol-group">
-                  <img src="/assets/slots/neon/seven.png" alt="Seven" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/seven.png" alt="Seven" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/seven.png" alt="Seven" className="paytable-symbol-image" />
-                </span>
-                <span>25x</span>
-              </div>
-              <div className="pay-row">
-                <span className="pay-symbol-group">
-                  <img src="/assets/slots/neon/bell.png" alt="Bell" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/bell.png" alt="Bell" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/bell.png" alt="Bell" className="paytable-symbol-image" />
-                </span>
-                <span>10x</span>
-              </div>
-              <div className="pay-row">
-                <span className="pay-symbol-group">
-                  <img src="/assets/slots/neon/star.png" alt="Star" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/star.png" alt="Star" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/star.png" alt="Star" className="paytable-symbol-image" />
-                </span>
-                <span>8x</span>
-              </div>
-              <div className="pay-row">
-                <span className="pay-symbol-group">
-                  <img src="/assets/slots/neon/lemon.png" alt="Lemon" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/lemon.png" alt="Lemon" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/lemon.png" alt="Lemon" className="paytable-symbol-image" />
-                </span>
-                <span>5x</span>
-              </div>
-              <div className="pay-row">
-                <span className="pay-symbol-group">
-                  <img src="/assets/slots/neon/cherry.png" alt="Cherry" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/cherry.png" alt="Cherry" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/cherry.png" alt="Cherry" className="paytable-symbol-image" />
-                </span>
-                <span>3x</span>
-              </div>
-              <div className="pay-row muted small">
-                <span className="pay-symbol-group">
-                  <img src="/assets/slots/neon/cherry.png" alt="Cherry" className="paytable-symbol-image" />
-                  <img src="/assets/slots/neon/cherry.png" alt="Cherry" className="paytable-symbol-image" />
-                  <span>*</span>
-                </span>
-                <span>1x</span>
+            <h3 className="panel-header">Actions</h3>
+            <p className="panel-subtle">Spin the reels!</p>
+
+            <div className="pt-wrap mt-3">
+              <button type="button" className="btn-secondary btn pt-trigger" aria-haspopup="true">
+                Paytable
+              </button>
+
+              <div className="pt-pop" role="dialog" aria-label="Paytable">
+                <div className="pt-pop-head">
+                  <strong>Paytable</strong>
+                  <span className="muted small">3 in a row</span>
+                </div>
+
+                <ul className="paytable">
+                  {(["💎", "7️⃣", "🔔", "⭐", "🍋", "🍒"] as SymbolGlyph[]).map((glyph) => (
+                    <li key={glyph}>
+                      <span className="pt-sym">
+                        <img src={PACK_MAP[glyph]} alt={glyphToLabel(glyph)} />
+                        <img src={PACK_MAP[glyph]} alt={glyphToLabel(glyph)} />
+                        <img src={PACK_MAP[glyph]} alt={glyphToLabel(glyph)} />
+                      </span>
+                      {" "}
+                      → x{PAY_MULT[glyph]}
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="muted small">
+                  Two <img src={PACK_MAP["🍒"]} alt="Cherry" style={{ width: 22, height: 22, verticalAlign: "middle" }} /> pay x1 as a consolation.
+                </p>
               </div>
             </div>
-
-            <button
-              className="btn btn-primary"
-              onClick={spin}
-              disabled={spinning || bet <= 0}
-              style={{ marginTop: "16px", width: "100%" }}
-            >
-              {spinning ? "Spinning..." : "Spin"}
-            </button>
           </div>
         </div>
       </main>
