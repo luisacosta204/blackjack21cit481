@@ -259,40 +259,49 @@ export default function BlackjackPage() {
   return (
     <>
       <HeaderUserNav
-        avatarSrc={avatarSrc}
-        username={username}
-        subtitle={
-          <span
-            id="bankBadge"
-            aria-label={`Bank: ${bank} chips`}
-            style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
-          >
-            {bank}
-          </span>
-        }
-        right={
-          <div className="bj-header-controls">
-            <button
-              type="button"
-              className="btn btn-secondary bj-header-home"
-              onClick={() => navigate("/home")}
-            >
-              ↩ Back to Home
-            </button>
-        
-            <label className="select bj-deck-select">
-              <span>Deck:</span>
-              <select
-                value={deckStyle}
-                onChange={(e) => setDeckStyle(e.target.value)}
-              >
-                <option value="style_1">Style 1 (Images)</option>
-                <option value="style_2">Style 2</option>
-              </select>
-            </label>
-          </div>
-        }
-      />
+  avatarSrc={avatarSrc}
+  username={username}
+  subtitle={
+    <span
+      id="bankBadge"
+      aria-label={`Bank: ${bank} chips`}
+      style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
+    >
+      {bank}
+    </span>
+  }
+  right={
+    <div className="bj-header-controls">
+      <Link
+        id="backButton"
+        to="/home"
+        className="btn btn-secondary bj-header-home"
+      >
+        ⮐ Back to Home
+      </Link>
+
+      <label htmlFor="deckSelect" className="select bj-deck-select">
+        <span>Deck:</span>
+        <select
+          id="deckSelect"
+          aria-label="Deck theme select"
+          value={deckId}
+          onChange={(e) => setDeckId(e.target.value)}
+        >
+          {deckOptions.length > 0 ? (
+            deckOptions.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.name}
+              </option>
+            ))
+          ) : (
+            <option value="style_1">Style 1 (Images)</option>
+          )}
+        </select>
+      </label>
+    </div>
+  }
+/>
 
       <main className="container bj-layout">
         {/* Playfield */}
