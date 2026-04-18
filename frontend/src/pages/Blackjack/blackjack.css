@@ -368,3 +368,105 @@ main.container.bj-layout {
 .bj-table, .bj-controls {
   min-height: 0;
 }
+
+/* =========================
+   Blackjack layout cleanup
+   ========================= */
+
+   main.container.bj-layout {
+    min-height: calc(100vh - var(--header-h, 72px));
+    display: grid;
+    gap: 14px;
+    padding-top: 12px;
+    padding-bottom: 18px;
+    overflow: visible;
+    height: auto;
+  }
+  
+  @supports (height: 100svh) {
+    main.container.bj-layout {
+      min-height: calc(100svh - var(--header-h, 72px));
+    }
+  }
+  
+  /* Let the table size naturally */
+  .bj-table {
+    max-height: none;
+    overflow: visible;
+  }
+  
+  .bj-table .table-wrap {
+    max-height: none;
+    overflow: visible;
+  }
+  
+  /* Keep the title row flexible */
+  .bj-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  
+  /* Main controls row */
+  .bj-controls {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  @media (max-width: 900px) {
+    .bj-controls {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  /* Table cards */
+  .cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    min-height: 96px;
+  }
+  
+  .cards img {
+    width: clamp(54px, 6vw, 78px);
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .score {
+    margin-top: 8px;
+    text-align: center;
+    font-weight: 700;
+    opacity: 0.96;
+  }
+  
+  @media (max-height: 820px) {
+    .cards {
+      min-height: 84px;
+    }
+  
+    .cards img {
+      width: clamp(48px, 5.4vw, 70px);
+    }
+  }
+  
+  @media (max-height: 740px) {
+    .cards {
+      min-height: 76px;
+    }
+  
+    .cards img {
+      width: clamp(44px, 5vw, 64px);
+    }
+  
+    .bj-controls {
+      position: static;
+    }
+  }
