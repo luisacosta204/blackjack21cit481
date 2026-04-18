@@ -318,9 +318,9 @@ export default function BlackjackPage() {
               <span className="muted">Shoe:</span>{" "}
               <span id="shoeInfo">{shoe.length} cards</span>
               <span className="muted"> | Count:</span>{" "}
-              <strong id="countInfo">—</strong>
+              <strong id="countInfo">{trueCount >= 0 ? "+" : ""}{trueCount.toFixed(1)}</strong>
               <span className="muted"> (</span>
-              <strong id="countLabel">Neutral</strong>
+              <strong id="countLabel">{countLabel}</strong>
               <span className="muted">)</span>
             </div>
           </div>
@@ -352,6 +352,24 @@ export default function BlackjackPage() {
                       : dealerScore
                     : "—"}
                 </div>
+
+                function hiLoValue(card: Card): number {
+                  if (["2", "3", "4", "5", "6"].includes(card.rank)) return 1;
+                  if (["10", "J", "Q", "K", "A"].includes(card.rank)) return -1;
+                  return 0;
+                }
+
+                const decksRemaining = Math.max(shoe.length / 52, 1);
+                const runningCount = [...playerCards, ...dealerCards].reduce(
+                  (sum, card) => sum + hiLoValue(card),
+                  0
+                );
+                const trueCount = runningCount / decksRemaining;
+
+                let countLabel = "Neutral";
+                if (trueCount >= 2) countLabel = "Hot";
+                else if (trueCount <= -2) countLabel = "Cold";
+
               </div>
             </div>
 
