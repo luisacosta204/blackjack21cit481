@@ -172,38 +172,95 @@
    }
    
    /* Smaller buttons */
-   .bj-betting .btn,
-   .bj-actions .btn {
-     width: 100%;
-     min-height: 44px;
-     padding: 8px 10px;
-     font-size: 0.95rem;
-     border-radius: 12px;
-   }
-   
-   /* Betting panel layout */
-   .bj-betting .cluster,
-   .bj-betting .bet-line {
-     display: grid;
-     grid-template-columns: repeat(3, minmax(0, 1fr));
-     gap: 10px;
-     align-items: stretch;
-   }
-   
-   .bj-betting .chip-row {
-     display: flex;
-     flex-wrap: wrap;
-     gap: 10px;
-     align-items: center;
-   }
-   
-   /* Actions panel layout */
-   .bj-actions .cluster {
-     display: grid;
-     grid-template-columns: repeat(3, minmax(0, 1fr));
-     gap: 10px;
-     align-items: stretch;
-   }
+  /* ========================================
+   Smaller, tighter blackjack controls
+   Matches current JSX structure
+   ======================================== */
+
+/* Chips row */
+.bj-chips {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, max-content));
+  gap: 8px;
+  align-items: center;
+}
+
+.chip-btn,
+#clearBetBtn {
+  min-height: 38px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+
+/* Bet summary rows stay compact */
+.bet-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.98rem;
+}
+
+/* Deal / New Round / Reshuffle */
+.mt-4.cluster {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+
+.mt-4.cluster .btn {
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  font-size: 0.92rem;
+  border-radius: 10px;
+}
+
+/* Action buttons */
+.cluster.bj-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+
+.cluster.bj-actions .btn {
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  border-radius: 10px;
+}
+
+/* Make the danger button not feel oversized */
+#resetBankBtn {
+  min-height: 40px;
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .bj-chips {
+    grid-template-columns: repeat(2, minmax(0, max-content));
+  }
+
+  .mt-4.cluster,
+  .cluster.bj-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile */
+@media (max-width: 560px) {
+  .bj-chips {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .mt-4.cluster,
+  .cluster.bj-actions {
+    grid-template-columns: 1fr;
+  }
+}
    
    /* Toasts / messages */
    .toast {
