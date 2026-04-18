@@ -368,3 +368,33 @@
     top: 106px;
   }
 }
+
+.login-error {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 87, 87, 0.12);
+  border: 1px solid rgba(255, 87, 87, 0.28);
+  color: #ffd4d4;
+  font-weight: 600;
+}
+
+.field-hint {
+  font-size: 0.85em;
+  font-weight: 500;
+  color: rgba(214, 227, 220, 0.7);
+}
+
+.text-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}

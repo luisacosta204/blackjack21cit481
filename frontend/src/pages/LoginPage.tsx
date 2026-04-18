@@ -1,34 +1,119 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config";
+import { updateCredits } from "../api/credits";
 import "./LoginPage.css";
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
-  const [emailOrUsername, setEmailOrUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [error, setError] = useState<string | null>(null);
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+  const BANK_KEY = "bjBank";
+  const START_BANK = 500;
+
+  function loadBank(): number {
+    const stored = localStorage.getItem(BANK_KEY);
+    return stored ? parseInt(stored, 10) : START_BANK;
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError(null);
+    setBusy(true);
 
-    // Replace this with your real login logic
-    console.log("Login attempt:", {
-      emailOrUsername,
-      password,
-      rememberMe,
-    });
+    const form = e.currentTarget;
+    const formData = new FormData(form);
 
-    // Example navigation after login
-    navigate("/");
-  };
+    try {
+      if (mode === "login") {
+        const identifier = formData.get("identifier")?.toString().trim();
+        const password = formData.get("password")?.toString();
 
-  const handleGuestContinue = () => {
-    // Replace this with your real guest flow
-    console.log("Continuing as guest");
-    navigate("/");
-  };
+        if (!identifier || !password) {
+          setError("Please fill out all fields.");
+          setBusy(false);
+          return;
+        }
+
+        const res = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data?.ok) {
+          setError(data?.error ?? "Login failed.");
+          setBusy(false);
+          return;
+        }
+
+        localStorage.setItem("token", data.token);
+
+        const bankValue = loadBank();
+        updateCredits(bankValue).catch((err) => {
+          console.error("Failed to sync credits on login", err);
+        });
+
+        navigate("/home");
+      } else {
+        const username = formData.get("username")?.toString().trim();
+        const email = formData.get("email")?.toString().trim();
+        const password = formData.get("password")?.toString();
+        const confirmPassword = formData.get("confirmPassword")?.toString();
+
+        if (!username || !email || !password || !confirmPassword) {
+          setError("Please fill out all fields.");
+          setBusy(false);
+          return;
+        }
+
+        if (password.length < 8) {
+          setError("Password must be at least 8 characters.");
+          setBusy(false);
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          setError("Passwords do not match.");
+          setBusy(false);
+          return;
+        }
+
+        const res = await fetch(`${API_BASE_URL}/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data?.ok) {
+          setError(data?.error ?? "Registration failed.");
+          setBusy(false);
+          return;
+        }
+
+        localStorage.setItem("token", data.token);
+
+        const bankValue = loadBank();
+        updateCredits(bankValue).catch((err) => {
+          console.error("Failed to sync credits on registration:", err);
+        });
+
+        navigate("/home");
+      }
+    } catch {
+      setError("Could not reach server. Is it running on port 3000?");
+      setBusy(false);
+    }
+  }
 
   return (
     <main className="login-page" aria-labelledby="page-title">
@@ -64,84 +149,184 @@ export default function LoginPage() {
         <section className="login-panel" aria-labelledby="page-title">
           <div className="login-card">
             <h2 id="page-title" className="login-title">
-              Welcome back
+              {mode === "login" ? "Welcome back" : "Create account"}
             </h2>
+
             <p className="login-subtitle">
-              Sign in to your Blackjack 21 account to continue.
+              {mode === "login"
+                ? "Sign in to your Blackjack 21 account to continue."
+                : "Create your Blackjack 21 account."}
             </p>
 
-            <form className="login-form" onSubmit={handleLogin}>
-              <div className="form-group">
-                <label htmlFor="email">Email or username</label>
-                <input
-                  id="email"
-                  name="email"
-                  type="text"
-                  placeholder="you@casino.com"
-                  autoComplete="username"
-                  value={emailOrUsername}
-                  onChange={(e) => setEmailOrUsername(e.target.value)}
-                />
+            {error && (
+              <div className="login-error" role="alert" aria-live="polite">
+                {error}
               </div>
+            )}
+
+            <form className="login-form" noValidate onSubmit={handleSubmit}>
+              {mode === "login" ? (
+                <div className="form-group">
+                  <label htmlFor="identifier">Email or username</label>
+                  <input
+                    id="identifier"
+                    name="identifier"
+                    type="text"
+                    inputMode="email"
+                    autoComplete="username"
+                    placeholder="you@casino.com"
+                    required
+                    aria-required="true"
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="form-group">
+                    <label htmlFor="username">Username</label>
+                    <input
+                      id="username"
+                      name="username"
+                      type="text"
+                      autoComplete="username"
+                      placeholder="playerOne"
+                      required
+                      aria-required="true"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="email">Email</label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="you@casino.com"
+                      required
+                      aria-required="true"
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="form-group">
-                <label htmlFor="password">Password</label>
+                <label htmlFor="password">
+                  Password
+                  {mode === "register" && (
+                    <span className="field-hint"> (8+ characters)</span>
+                  )}
+                </label>
+
                 <div className="password-wrap">
                   <input
                     id="password"
                     name="password"
-                    type={showPassword ? "text" : "password"}
+                    type={showPw ? "text" : "password"}
+                    autoComplete={
+                      mode === "login" ? "current-password" : "new-password"
+                    }
+                    minLength={8}
                     placeholder="••••••••"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    aria-required="true"
                   />
                   <button
                     type="button"
                     className="password-toggle"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPw ? "Hide password" : "Show password"}
+                    title={showPw ? "Hide password" : "Show password"}
+                    onClick={() => setShowPw((v) => !v)}
                   >
-                    {showPassword ? "🙈" : "👁"}
+                    {showPw ? "🙈" : "👁️"}
                   </button>
                 </div>
               </div>
 
-              <div className="login-row">
-                <label className="checkbox-wrap">
-                  <input
-                    type="checkbox"
-                    name="remember"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  <span>Remember me</span>
-                </label>
+              {mode === "register" && (
+                <div className="form-group">
+                  <label htmlFor="confirmPassword">Confirm Password</label>
+                  <div className="password-wrap">
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPw ? "text" : "password"}
+                      autoComplete="new-password"
+                      minLength={8}
+                      placeholder="••••••••"
+                      required
+                      aria-required="true"
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      aria-label={
+                        showConfirmPw ? "Hide password" : "Show password"
+                      }
+                      title={showConfirmPw ? "Hide password" : "Show password"}
+                      onClick={() => setShowConfirmPw((v) => !v)}
+                    >
+                      {showConfirmPw ? "🙈" : "👁️"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
-                <Link to="/register" className="text-link">
-                  Create one
-                </Link>
+              <div className="login-row">
+                {mode === "login" ? (
+                  <label className="checkbox-wrap">
+                    <input type="checkbox" id="remember" name="remember" />
+                    <span>Remember me</span>
+                  </label>
+                ) : (
+                  <div />
+                )}
+
+                <button
+                  type="button"
+                  className="text-link text-button"
+                  onClick={() => {
+                    setMode((m) => (m === "login" ? "register" : "login"));
+                    setError(null);
+                  }}
+                >
+                  {mode === "login" ? "Create one" : "Have an account? Log in"}
+                </button>
               </div>
 
-              <button type="submit" className="btn btn-primary">
-                Sign In
+              <button className="btn btn-primary" type="submit" disabled={busy}>
+                {busy
+                  ? mode === "login"
+                    ? "Signing in..."
+                    : "Creating account..."
+                  : mode === "login"
+                  ? "Sign In"
+                  : "Create Account"}
               </button>
 
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={handleGuestContinue}
+                onClick={() => navigate("/home")}
               >
                 Continue as Guest
               </button>
             </form>
 
-            <p className="login-footer">
-              No account?{" "}
-              <Link to="/register" className="text-link">
-                Create one
-              </Link>
-            </p>
+            {mode === "login" && (
+              <p className="login-footer">
+                No account?{" "}
+                <button
+                  type="button"
+                  className="text-link text-button"
+                  onClick={() => {
+                    setMode("register");
+                    setError(null);
+                  }}
+                >
+                  Create one
+                </button>
+              </p>
+            )}
           </div>
         </section>
       </div>
