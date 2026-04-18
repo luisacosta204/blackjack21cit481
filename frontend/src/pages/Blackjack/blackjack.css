@@ -1,290 +1,187 @@
-/* ---- Blackjack table + controls ---- */
+/* ========================================
+   Blackjack page
+   Cleaned consolidated stylesheet
+   ======================================== */
 
-html,
-body {
-  height: 100%;
-}
-
-main.container.bj-layout {
-  min-height: calc(100vh - var(--header-h, 72px));
-  display: grid;
-  gap: 14px;
-  padding-top: 12px;
-  padding-bottom: 18px;
-  overflow: visible;
-}
-
-@supports (height: 100svh) {
-  main.container.bj-layout {
-    min-height: calc(100svh - var(--header-h, 72px));
-  }
-}
-
-.bj-table,
-.bj-controls {
-  min-height: 0;
-}
-
-.bj-table {
-  overflow: visible;
-}
-
-.bj-table .table-wrap {
-  display: grid;
-  gap: 18px;
-  padding: 18px;
-  border-radius: 14px;
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  overflow: visible;
-}
-
-.bj-title {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.bj-metrics {
-  font-size: 0.95rem;
-  opacity: 0.92;
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  white-space: nowrap;
-}
-
-.bj-status {
-  margin-top: 12px;
-}
-
-.bj-controls {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: 1fr 1fr;
-  align-items: start;
-}
-
-.row {
-  display: flex;
-  justify-content: center;
-}
-
-.hand {
-  width: 100%;
-  max-width: 860px;
-}
-
-.label {
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  margin-bottom: 8px;
-}
-
-.cards {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-end;
-  gap: 14px;
-  min-height: 110px;
-  padding: 8px 0;
-}
-
-.cards img {
-  width: clamp(52px, 5.2vw, 74px);
-  height: auto;
-  border-radius: 10px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  margin: 0;
-  transform: none;
-}
-
-.score {
-  margin-top: 8px;
-  text-align: center;
-  font-weight: 700;
-  opacity: 0.96;
-}
-
-.cluster {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-
-.bet-line {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.select {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: var(--text, #fff);
-  padding: 8px 10px;
-  border-radius: 10px;
-}
-
-.chip-btn {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  padding: 9px 12px;
-  border-radius: 999px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.chip-btn:hover {
-  filter: brightness(1.07);
-}
-
-.chip-5 {
-  box-shadow: inset 0 0 0 2px rgba(0, 255, 170, 0.25);
-}
-
-.chip-25 {
-  box-shadow: inset 0 0 0 2px rgba(255, 204, 0, 0.25);
-}
-
-.chip-100 {
-  box-shadow: inset 0 0 0 2px rgba(255, 80, 80, 0.25);
-}
-
-.bj-actions .btn {
-  padding: 10px 12px;
-  border-radius: 12px;
-}
-
-.toast {
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.toast.info {
-  border-color: rgba(120, 190, 255, 0.35);
-}
-
-.toast.success {
-  border-color: rgba(70, 255, 170, 0.3);
-}
-
-.toast.warn {
-  border-color: rgba(255, 210, 70, 0.35);
-}
-
-.toast.danger {
-  border-color: rgba(255, 90, 90, 0.35);
-}
-
-.header .right.cluster {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  min-width: 110px;
-}
-
-.mt-2 {
-  margin-top: 8px;
-}
-
-.mt-4 {
-  margin-top: 14px;
-}
-
-.mt-6 {
-  margin-top: 18px;
-}
-
-.muted {
-  opacity: 0.75;
-}
-
-@media (max-width: 900px) {
-  .bj-controls {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-height: 820px) {
-  main.container.bj-layout {
-    gap: 10px;
-    padding-top: 10px;
-    padding-bottom: 10px;
-  }
-
-  .panel-header {
-    margin-bottom: 6px;
-  }
-
-  .panel-subtle {
-    margin-top: 4px;
-    margin-bottom: 8px;
-  }
-
-  .toast {
-    padding: 10px 12px;
-  }
-
-  .cards {
-    min-height: 84px;
-  }
-
-  .cards img {
-    width: clamp(48px, 5.4vw, 70px);
-  }
-}
-
-@media (max-height: 740px) {
-  .cards {
-    min-height: 76px;
-  }
-
-  .cards img {
-    width: clamp(44px, 5vw, 64px);
-  }
-
-  .bj-controls {
-    position: static;
-  }
-}
-
-/* =========================
-   Smaller control buttons
-   ========================= */
-
+   html,
+   body {
+     height: 100%;
+   }
+   
+   /* Main page layout */
+   main.container.bj-layout {
+     min-height: calc(100vh - var(--header-h, 72px));
+     display: grid;
+     gap: 14px;
+     padding-top: 12px;
+     padding-bottom: 18px;
+     overflow: visible;
+   }
+   
+   @supports (height: 100svh) {
+     main.container.bj-layout {
+       min-height: calc(100svh - var(--header-h, 72px));
+     }
+   }
+   
+   /* Main sections */
+   .bj-table,
+   .bj-controls {
+     min-height: 0;
+   }
+   
+   .bj-table {
+     overflow: visible;
+   }
+   
+   .bj-table .table-wrap {
+     display: grid;
+     gap: 18px;
+     padding: 18px;
+     border-radius: 14px;
+     background: rgba(0, 0, 0, 0.18);
+     border: 1px solid rgba(255, 255, 255, 0.08);
+     overflow: visible;
+   }
+   
+   /* Header area inside table panel */
+   .bj-title {
+     display: flex;
+     align-items: flex-start;
+     justify-content: space-between;
+     gap: 14px;
+     flex-wrap: wrap;
+   }
+   
+   .bj-metrics {
+     font-size: 0.95rem;
+     opacity: 0.92;
+     padding: 8px 10px;
+     border-radius: 12px;
+     background: rgba(255, 255, 255, 0.05);
+     border: 1px solid rgba(255, 255, 255, 0.1);
+     white-space: nowrap;
+   }
+   
+   .bj-status {
+     margin-top: 12px;
+   }
+   
+   /* Lower controls row */
+   .bj-controls {
+     display: grid;
+     gap: 14px;
+     grid-template-columns: 1fr 1fr;
+     align-items: start;
+   }
+   
+   /* Table / hands */
+   .row {
+     display: flex;
+     justify-content: center;
+   }
+   
+   .hand {
+     width: 100%;
+     max-width: 1000px;
+   }
+   
+   .label {
+     font-weight: 700;
+     letter-spacing: 0.2px;
+     margin-bottom: 8px;
+   }
+   
+   .cards {
+     display: flex;
+     flex-wrap: wrap;
+     justify-content: center;
+     align-items: flex-end;
+     gap: 14px;
+     min-height: 110px;
+     padding: 8px 0;
+   }
+   
+   .cards img {
+     width: clamp(52px, 5.2vw, 74px);
+     height: auto;
+     border-radius: 10px;
+     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+     border: 1px solid rgba(255, 255, 255, 0.1);
+     margin: 0;
+     transform: none;
+     position: relative;
+     z-index: 1;
+   }
+   
+   .score {
+     margin-top: 8px;
+     text-align: center;
+     font-weight: 700;
+     opacity: 0.96;
+   }
+   
+   /* Generic layout helpers */
+   .cluster {
+     display: flex;
+     flex-wrap: wrap;
+     gap: 10px;
+     align-items: center;
+   }
+   
+   .bet-line {
+     display: flex;
+     gap: 10px;
+     align-items: center;
+     flex-wrap: wrap;
+   }
+   
+   .select {
+     background: rgba(255, 255, 255, 0.06);
+     border: 1px solid rgba(255, 255, 255, 0.12);
+     color: var(--text, #fff);
+     padding: 8px 10px;
+     border-radius: 10px;
+   }
+   
+   /* Chips */
+   .chip-btn {
+     border: 1px solid rgba(255, 255, 255, 0.14);
+     background: rgba(255, 255, 255, 0.06);
+     color: #fff;
+     padding: 9px 12px;
+     border-radius: 999px;
+     font-weight: 700;
+     cursor: pointer;
+   }
+   
+   .chip-btn:hover {
+     filter: brightness(1.07);
+   }
+   
+   .chip-5 {
+     box-shadow: inset 0 0 0 2px rgba(0, 255, 170, 0.25);
+   }
+   
+   .chip-25 {
+     box-shadow: inset 0 0 0 2px rgba(255, 204, 0, 0.25);
+   }
+   
+   .chip-100 {
+     box-shadow: inset 0 0 0 2px rgba(255, 80, 80, 0.25);
+   }
+   
+   /* Smaller buttons */
    .bj-betting .btn,
    .bj-actions .btn {
+     width: 100%;
      min-height: 44px;
      padding: 8px 10px;
      font-size: 0.95rem;
      border-radius: 12px;
    }
    
-   /* Betting buttons: 3 per row */
+   /* Betting panel layout */
    .bj-betting .cluster,
    .bj-betting .bet-line {
      display: grid;
@@ -293,7 +190,6 @@ main.container.bj-layout {
      align-items: stretch;
    }
    
-   /* Let the chips sit nicely above if they are in their own row */
    .bj-betting .chip-row {
      display: flex;
      flex-wrap: wrap;
@@ -301,7 +197,7 @@ main.container.bj-layout {
      align-items: center;
    }
    
-   /* Action buttons: 3 per row in the same panel */
+   /* Actions panel layout */
    .bj-actions .cluster {
      display: grid;
      grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -309,14 +205,74 @@ main.container.bj-layout {
      align-items: stretch;
    }
    
-   /* Buttons should fill their grid cell cleanly */
-   .bj-betting .btn,
-   .bj-actions .btn {
-     width: 100%;
+   /* Toasts / messages */
+   .toast {
+     padding: 12px 14px;
+     border-radius: 12px;
+     border: 1px solid rgba(255, 255, 255, 0.12);
+     background: rgba(255, 255, 255, 0.06);
    }
    
-   /* Fall back to fewer columns on smaller screens */
+   .toast.info {
+     border-color: rgba(120, 190, 255, 0.35);
+   }
+   
+   .toast.success {
+     border-color: rgba(70, 255, 170, 0.3);
+   }
+   
+   .toast.warn {
+     border-color: rgba(255, 210, 70, 0.35);
+   }
+   
+   .toast.danger {
+     border-color: rgba(255, 90, 90, 0.35);
+   }
+   
+   /* Header right side refinements */
+   .header .right.cluster {
+     display: flex;
+     align-items: center;
+     gap: 10px;
+     flex-wrap: wrap;
+     justify-content: flex-end;
+   }
+   
+   .badge {
+     display: inline-flex;
+     align-items: center;
+     justify-content: center;
+     padding: 8px 12px;
+     border-radius: 999px;
+     font-weight: 700;
+     background: rgba(255, 255, 255, 0.06);
+     border: 1px solid rgba(255, 255, 255, 0.12);
+     min-width: 110px;
+   }
+   
+   /* Small utility helpers */
+   .mt-2 {
+     margin-top: 8px;
+   }
+   
+   .mt-4 {
+     margin-top: 14px;
+   }
+   
+   .mt-6 {
+     margin-top: 18px;
+   }
+   
+   .muted {
+     opacity: 0.75;
+   }
+   
+   /* Tablet and below */
    @media (max-width: 900px) {
+     .bj-controls {
+       grid-template-columns: 1fr;
+     }
+   
      .bj-betting .cluster,
      .bj-betting .bet-line,
      .bj-actions .cluster {
@@ -324,10 +280,57 @@ main.container.bj-layout {
      }
    }
    
+   /* Mobile */
    @media (max-width: 560px) {
      .bj-betting .cluster,
      .bj-betting .bet-line,
      .bj-actions .cluster {
        grid-template-columns: 1fr;
+     }
+   }
+   
+   /* Shorter screens */
+   @media (max-height: 820px) {
+     main.container.bj-layout {
+       gap: 10px;
+       padding-top: 10px;
+       padding-bottom: 10px;
+     }
+   
+     .panel-header {
+       margin-bottom: 6px;
+     }
+   
+     .panel-subtle {
+       margin-top: 4px;
+       margin-bottom: 8px;
+     }
+   
+     .toast {
+       padding: 10px 12px;
+     }
+   
+     .cards {
+       min-height: 84px;
+       gap: 12px;
+     }
+   
+     .cards img {
+       width: clamp(48px, 5.4vw, 70px);
+     }
+   }
+   
+   @media (max-height: 740px) {
+     .cards {
+       min-height: 76px;
+       gap: 10px;
+     }
+   
+     .cards img {
+       width: clamp(44px, 5vw, 64px);
+     }
+   
+     .bj-controls {
+       position: static;
      }
    }
