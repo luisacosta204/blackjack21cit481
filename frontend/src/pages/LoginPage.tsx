@@ -1,9 +1,34 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./LoginPage.css";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+
+  const [emailOrUsername, setEmailOrUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // Replace this with your real login logic
+    console.log("Login attempt:", {
+      emailOrUsername,
+      password,
+      rememberMe,
+    });
+
+    // Example navigation after login
+    navigate("/");
+  };
+
+  const handleGuestContinue = () => {
+    // Replace this with your real guest flow
+    console.log("Continuing as guest");
+    navigate("/");
+  };
 
   return (
     <main className="login-page" aria-labelledby="page-title">
@@ -45,7 +70,7 @@ export default function LoginPage() {
               Sign in to your Blackjack 21 account to continue.
             </p>
 
-            <form className="login-form">
+            <form className="login-form" onSubmit={handleLogin}>
               <div className="form-group">
                 <label htmlFor="email">Email or username</label>
                 <input
@@ -54,6 +79,8 @@ export default function LoginPage() {
                   type="text"
                   placeholder="you@casino.com"
                   autoComplete="username"
+                  value={emailOrUsername}
+                  onChange={(e) => setEmailOrUsername(e.target.value)}
                 />
               </div>
 
@@ -66,6 +93,8 @@ export default function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                   <button
                     type="button"
@@ -80,7 +109,12 @@ export default function LoginPage() {
 
               <div className="login-row">
                 <label className="checkbox-wrap">
-                  <input type="checkbox" name="remember" />
+                  <input
+                    type="checkbox"
+                    name="remember"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
                   <span>Remember me</span>
                 </label>
 
@@ -93,7 +127,11 @@ export default function LoginPage() {
                 Sign In
               </button>
 
-              <button type="button" className="btn btn-secondary">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleGuestContinue}
+              >
                 Continue as Guest
               </button>
             </form>
