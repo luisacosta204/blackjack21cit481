@@ -65,6 +65,7 @@ main.container.bj-layout {
   display: grid;
   gap: 14px;
   grid-template-columns: 1fr 1fr;
+  align-items: start;
 }
 
 .row {
@@ -87,17 +88,20 @@ main.container.bj-layout {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: center;
-  gap: 10px;
-  min-height: 96px;
+  align-items: flex-end;
+  gap: 14px;
+  min-height: 110px;
+  padding: 8px 0;
 }
 
 .cards img {
-  width: clamp(54px, 6vw, 78px);
+  width: clamp(52px, 5.2vw, 74px);
   height: auto;
   border-radius: 10px;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 0;
+  transform: none;
 }
 
 .score {
@@ -267,3 +271,63 @@ main.container.bj-layout {
     position: static;
   }
 }
+
+/* =========================
+   Smaller control buttons
+   ========================= */
+
+   .bj-betting .btn,
+   .bj-actions .btn {
+     min-height: 44px;
+     padding: 8px 10px;
+     font-size: 0.95rem;
+     border-radius: 12px;
+   }
+   
+   /* Betting buttons: 3 per row */
+   .bj-betting .cluster,
+   .bj-betting .bet-line {
+     display: grid;
+     grid-template-columns: repeat(3, minmax(0, 1fr));
+     gap: 10px;
+     align-items: stretch;
+   }
+   
+   /* Let the chips sit nicely above if they are in their own row */
+   .bj-betting .chip-row {
+     display: flex;
+     flex-wrap: wrap;
+     gap: 10px;
+     align-items: center;
+   }
+   
+   /* Action buttons: 3 per row in the same panel */
+   .bj-actions .cluster {
+     display: grid;
+     grid-template-columns: repeat(3, minmax(0, 1fr));
+     gap: 10px;
+     align-items: stretch;
+   }
+   
+   /* Buttons should fill their grid cell cleanly */
+   .bj-betting .btn,
+   .bj-actions .btn {
+     width: 100%;
+   }
+   
+   /* Fall back to fewer columns on smaller screens */
+   @media (max-width: 900px) {
+     .bj-betting .cluster,
+     .bj-betting .bet-line,
+     .bj-actions .cluster {
+       grid-template-columns: repeat(2, minmax(0, 1fr));
+     }
+   }
+   
+   @media (max-width: 560px) {
+     .bj-betting .cluster,
+     .bj-betting .bet-line,
+     .bj-actions .cluster {
+       grid-template-columns: 1fr;
+     }
+   }
