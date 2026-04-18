@@ -271,34 +271,25 @@ export default function BlackjackPage() {
           </span>
         }
         right={
-          <div className="right cluster">
-            <Link id="backButton" to="/home" className="back-button btn-secondary btn">
-              ⮐ Back to Home
-            </Link>
-
-            <label htmlFor="deckSelect" className="muted">
-              Deck:
-            </label>
-            {/* Deck select — now live, populated from manifest */}
-            <select
-              id="deckSelect"
-              className="select"
-              aria-label="Deck theme select"
-              value={deckId}
-              onChange={(e) => setDeckId(e.target.value)}
+          <div className="bj-header-controls">
+            <button
+              type="button"
+              className="btn btn-secondary bj-header-home"
+              onClick={() => navigate("/home")}
             >
-              {deckOptions.length > 0 ? (
-                deckOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.name}
-                  </option>
-                ))
-              ) : (
-                /* Fallback while manifest loads */
+              ↩ Back to Home
+            </button>
+        
+            <label className="select bj-deck-select">
+              <span>Deck:</span>
+              <select
+                value={deckStyle}
+                onChange={(e) => setDeckStyle(e.target.value)}
+              >
                 <option value="style_1">Style 1 (Images)</option>
-              )}
-            </select>
-
+                <option value="style_2">Style 2</option>
+              </select>
+            </label>
           </div>
         }
       />

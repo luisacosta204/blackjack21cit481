@@ -288,12 +288,12 @@
    
    /* Header right side refinements */
    .header .right.cluster {
-     display: flex;
-     align-items: center;
-     gap: 10px;
-     flex-wrap: wrap;
-     justify-content: flex-end;
-   }
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
    
    .badge {
      display: inline-flex;
@@ -391,3 +391,79 @@
        position: static;
      }
    }
+
+   /* ========================================
+   Blackjack header controls
+   Keep Back + Deck on one line
+   ======================================== */
+
+.bj-header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.bj-header-home {
+  min-height: 38px;
+  padding: 6px 14px;
+  font-size: 0.92rem;
+}
+
+.bj-deck-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.bj-deck-select span {
+  opacity: 0.9;
+}
+
+.bj-deck-select select {
+  min-width: 150px;
+}
+
+/* Override wrapping from the shared header rule on this page */
+.header .right.cluster .bj-header-controls {
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 900px) {
+  .bj-header-controls {
+    gap: 8px;
+  }
+
+  .bj-header-home {
+    padding: 6px 12px;
+    font-size: 0.88rem;
+  }
+
+  .bj-deck-select {
+    padding: 6px 8px;
+  }
+
+  .bj-deck-select select {
+    min-width: 130px;
+  }
+}
+
+@media (max-width: 640px) {
+  .bj-header-controls {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .bj-header-home {
+    padding: 6px 10px;
+  }
+
+  .bj-deck-select select {
+    min-width: 118px;
+  }
+}
