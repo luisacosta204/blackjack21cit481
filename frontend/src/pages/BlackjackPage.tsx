@@ -512,15 +512,7 @@ export default function BlackjackPage() {
               <button className="btn-secondary btn" id="insuranceBtn" disabled type="button">
                 Take Insurance
               </button>
-              <button
-                className="btn-secondary btn"
-                id="changeDeckBtn"
-                title="Switch card style"
-                disabled
-                type="button"
-              >
-                Change Deck
-              </button>
+              
 
               <button
                 className="btn-danger btn"
