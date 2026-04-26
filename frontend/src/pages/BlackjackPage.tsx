@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import HeaderUserNav from "../components/HeaderUserNav";
 import { useAvatar } from "../hooks/useAvatar";
@@ -13,7 +13,7 @@ import { useDeckTheme } from "../features/blackjack/useDeckTheme";
 import CardImage from "../features/blackjack/CardImage";
 
 
-import "./Blackjack/blackjack.css";
+import "./blackjack/blackjack.css";
 import { recordGameResult } from "../api/gameResults";
 import { updateCredits } from "../api/credits";
 import { recordProfileGameResult } from "../utils/profileStats";
@@ -30,6 +30,12 @@ function loadBank(): number {
 
 // ── Outcome type ──────────────────────────────────────────────────────────────
 type RoundOutcome = "win" | "lose" | "push" | "blackjack";
+
+function hiLoValue(card: Card): number {
+  if (["2", "3", "4", "5", "6"].includes(card.rank)) return 1;
+  if (["7", "8", "9"].includes(card.rank)) return 0;
+  return -1;
+}
 
 export default function BlackjackPage() {
   const { user } = useMe();
@@ -57,6 +63,8 @@ export default function BlackjackPage() {
 
   // ── Shoe (6-deck default) ─────────────────────────────────────────────────
   const [shoe, setShoe] = useState<Card[]>(() => buildShoe(6));
+  const [runningCount, setRunningCount] = useState(0);
+  const [hiddenDealerCount, setHiddenDealerCount] = useState(0);
 
   // ── Round state ───────────────────────────────────────────────────────────
   const [statusText, setStatusText] = useState("Place your bet to begin.");
@@ -72,6 +80,19 @@ export default function BlackjackPage() {
     : null;
 
   const canDeal = (!inRound || roundOver) && betPerHand > 0 && bank > 0;
+
+  const countDisplay = useMemo(() => {
+    const decksRemaining = Math.max(shoe.length / 52, 0.25);
+    const trueCount = runningCount / decksRemaining;
+    const label = trueCount >= 2 ? "Hot" : trueCount <= -2 ? "Cold" : "Neutral";
+    const sign = runningCount >= 0 ? "+" : "";
+    const trueSign = trueCount >= 0 ? "+" : "";
+    return {
+      shoeText: `${shoe.length}/312 cards left (${Math.round(((312 - shoe.length) / 312) * 100)}% dealt)`,
+      countText: `${sign}${runningCount} / ${trueSign}${trueCount.toFixed(1)}`,
+      label,
+    };
+  }, [runningCount, shoe.length]);
   const canHit = inRound && !roundOver;
   const canStand = inRound && !roundOver;
   const bettingDisabled = inRound;
@@ -97,6 +118,8 @@ export default function BlackjackPage() {
   // ── Round helpers ─────────────────────────────────────────────────────────
   const reshuffle = () => {
     setShoe(buildShoe(6));
+    setRunningCount(0);
+    setHiddenDealerCount(0);
     setDealerCards([]);
     setPlayerCards([]);
     setStatusText("Reshuffled. Click Deal to start.");
@@ -106,6 +129,7 @@ export default function BlackjackPage() {
 
   const newRound = () => {
     setDealerCards([]);
+    setHiddenDealerCount(0);
     setPlayerCards([]);
     setStatusText("Place your bet to begin.");
     setInRound(false);
@@ -118,7 +142,8 @@ export default function BlackjackPage() {
     finalPlayer: Card[],
     message: string,
     nextShoe: Card[],
-    outcome: RoundOutcome
+    outcome: RoundOutcome,
+    revealHiddenDealer = true
   ) => {
     setDealerCards(finalDealer);
     setPlayerCards(finalPlayer);
@@ -126,6 +151,11 @@ export default function BlackjackPage() {
     setStatusText(message);
     setRoundOver(true);
     setInRound(false);
+
+    if (revealHiddenDealer && hiddenDealerCount !== 0) {
+      setRunningCount((prev) => prev + hiddenDealerCount);
+      setHiddenDealerCount(0);
+    }
 
     //Apply payout
     setBank((prev) => {
@@ -167,28 +197,35 @@ export default function BlackjackPage() {
     const currentPlayer = playerOverride ?? playerCards;
     let currentDealer = [...dealerCards];
 
+    const revealedHiddenDealer = hiddenDealerCount !== 0;
+    if (revealedHiddenDealer) {
+      setRunningCount((prev) => prev + hiddenDealerCount);
+      setHiddenDealerCount(0);
+    }
+
     while (handValue(currentDealer) < 17) {
       const next = draw(currentShoe);
       currentShoe = next.shoe;
       currentDealer.push(next.card);
+      setRunningCount((prev) => prev + hiLoValue(next.card));
     }
 
     const pScore = handValue(currentPlayer);
     const dScore = handValue(currentDealer);
 
     if (dScore > 21) {
-      finishRound(currentDealer, currentPlayer, `Dealer busts (${dScore}). You win!`, currentShoe, "win");
+      finishRound(currentDealer, currentPlayer, `Dealer busts (${dScore}). You win!`, currentShoe, "win", !revealedHiddenDealer);
       return;
     }
     if (pScore > dScore) {
-      finishRound(currentDealer, currentPlayer, `You win! (${pScore} vs ${dScore})`, currentShoe, "win");
+      finishRound(currentDealer, currentPlayer, `You win! (${pScore} vs ${dScore})`, currentShoe, "win", !revealedHiddenDealer);
       return;
     }
     if (pScore < dScore) {
-      finishRound(currentDealer, currentPlayer, `Dealer wins. (${dScore} vs ${pScore})`, currentShoe, "lose");
+      finishRound(currentDealer, currentPlayer, `Dealer wins. (${dScore} vs ${pScore})`, currentShoe, "lose", !revealedHiddenDealer);
       return;
     }
-    finishRound(currentDealer, currentPlayer, `Push. (${pScore} vs ${dScore})`, currentShoe, "push");
+    finishRound(currentDealer, currentPlayer, `Push. (${pScore} vs ${dScore})`, currentShoe, "push", !revealedHiddenDealer);
   };
 
   // ── Hit ───────────────────────────────────────────────────────────────────
@@ -200,6 +237,7 @@ export default function BlackjackPage() {
     const newPlayer = [...playerCards, next.card];
     setPlayerCards(newPlayer);
     setShoe(currentShoe);
+    setRunningCount((prev) => prev + hiLoValue(next.card));
 
     const pScore = handValue(newPlayer);
 
@@ -220,6 +258,8 @@ export default function BlackjackPage() {
     if (shoe.length < 20) {
       const newShoe = buildShoe(6);
       setShoe(newShoe);
+      setRunningCount(0);
+      setHiddenDealerCount(0);
       setDealerCards([]);
       setPlayerCards([]);
       setStatusText("Reshuffled. Click Deal to start.");
@@ -241,6 +281,8 @@ export default function BlackjackPage() {
     setDealerCards(newDealer);
     setPlayerCards(newPlayer);
     setShoe(currentShoe);
+    setRunningCount((prev) => prev + hiLoValue(d1.card) + hiLoValue(p1.card) + hiLoValue(p2.card));
+    setHiddenDealerCount(hiLoValue(d2.card));
     setInRound(true);
     setRoundOver(false);
 
@@ -319,11 +361,11 @@ export default function BlackjackPage() {
 
             <div className="bj-metrics" aria-label="Shoe and count info">
               <span className="muted">Shoe:</span>{" "}
-              <span id="shoeInfo">{shoe.length} cards</span>
+              <span id="shoeInfo">{countDisplay.shoeText}</span>
               <span className="muted"> | Count:</span>{" "}
-              <strong id="countInfo">—</strong>
+              <strong id="countInfo">{countDisplay.countText}</strong>
               <span className="muted"> (</span>
-              <strong id="countLabel">Neutral</strong>
+              <strong id="countLabel" data-state={countDisplay.label}>{countDisplay.label}</strong>
               <span className="muted">)</span>
             </div>
           </div>
