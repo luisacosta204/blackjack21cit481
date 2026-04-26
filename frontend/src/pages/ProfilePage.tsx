@@ -9,6 +9,7 @@ import { useMe } from "../hooks/useMe";
 import { getOrCreateGuestUsername } from "../utils/guest";
 import CenteredMain from "../components/CenteredMain";
 import { getProfileOverview, resetProfileStats, type GameKey } from "../utils/profileStats";
+import { chipUrlForBank } from "../utils/chips";
 import "./ProfilePage.css";
 
 const AVATAR_OPTIONS = [
@@ -103,8 +104,12 @@ export default function ProfilePage() {
         avatarSrc={avatarSrc}
         username={username}
         subtitle={
-          <span id="bankBadge" aria-label={`Bank: ${user ? user.credits : localStorage.getItem(BANK_KEY) ?? START_BANK} chips`}>
-            {user ? user.credits : localStorage.getItem(BANK_KEY) ?? START_BANK}
+          <span
+            id="bankBadge"
+            aria-label={`Bank: ${Number(localStorage.getItem(BANK_KEY) ?? START_BANK)} chips`}
+            style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(Number(localStorage.getItem(BANK_KEY) ?? START_BANK))}")` }}
+          >
+            {Number(localStorage.getItem(BANK_KEY) ?? START_BANK)}
           </span>
         }
         right={
