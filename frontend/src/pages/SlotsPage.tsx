@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import HeaderUserNav from "../components/HeaderUserNav";
 import { useMe } from "../hooks/useMe";
@@ -11,8 +11,6 @@ import { chipUrlForBank } from "../utils/chips";
 import "./Slots/slots.css";
 
 type SymbolKey = "🍒" | "🍋" | "⭐" | "🔔" | "7️⃣" | "💎";
-
-type ReelState = SymbolKey[];
 
 const SYMBOLS: Array<{ glyph: SymbolKey; weight: number }> = [
   { glyph: "🍒", weight: 24 },
@@ -52,24 +50,15 @@ function loadBank(): number {
 function randomSymbol(): SymbolKey {
   const totalWeight = SYMBOLS.reduce((sum, s) => sum + s.weight, 0);
   let random = Math.random() * totalWeight;
-
   for (const symbol of SYMBOLS) {
     random -= symbol.weight;
     if (random <= 0) return symbol.glyph;
   }
-
   return SYMBOLS[0].glyph;
 }
 
 function renderSymbol(glyph: SymbolKey, compact = false) {
   return <img src={SLOT_IMAGE[glyph]} alt={glyph} className={compact ? "symbol-mini" : "symbol-image"} />;
-}
-
-function buildStrip(finalSymbol: SymbolKey): ReelState {
-  const strip: ReelState = [];
-  for (let i = 0; i < 8; i += 1) strip.push(randomSymbol());
-  strip.push(finalSymbol);
-  return strip;
 }
 
 export default function SlotsPage() {
@@ -82,9 +71,19 @@ export default function SlotsPage() {
   const [spinning, setSpinning] = useState(false);
   const [status, setStatus] = useState("Set your bet, then press Spin.");
   const [reels, setReels] = useState<[SymbolKey, SymbolKey, SymbolKey]>(() => [randomSymbol(), randomSymbol(), randomSymbol()]);
-  const [animatedStrips, setAnimatedStrips] = useState<[ReelState | null, ReelState | null, ReelState | null]>([null, null, null]);
+  const [reelSpinning, setReelSpinning] = useState<[boolean, boolean, boolean]>([false, false, false]);
 
-  const timeoutRef = useRef<number | null>(null);
+  const intervalRefs = useRef<Array<number | null>>([null, null, null]);
+  const timeoutRefs = useRef<number[]>([]);
+
+  useEffect(() => {
+    return () => {
+      intervalRefs.current.forEach((id) => {
+        if (id !== null) window.clearInterval(id);
+      });
+      timeoutRefs.current.forEach((id) => window.clearTimeout(id));
+    };
+  }, []);
 
   function saveBank(value: number) {
     localStorage.setItem(BANK_KEY, String(value));
@@ -96,7 +95,6 @@ export default function SlotsPage() {
       setStatus("No credits available.");
       return;
     }
-
     const nextBet = Math.min(bank, bet + amount);
     setBet(nextBet);
     setStatus(`Bet: ${nextBet} credits. Press Spin.`);
@@ -122,6 +120,28 @@ export default function SlotsPage() {
     return cherries >= 2 ? stake : 0;
   }
 
+  async function finalizeSpin(results: [SymbolKey, SymbolKey, SymbolKey], bankAfterBet: number) {
+    const payout = evaluateWin(results, bet);
+    const didWin = payout > 0;
+    const finalBank = didWin ? bankAfterBet + payout : bankAfterBet;
+
+    setBank(finalBank);
+    saveBank(finalBank);
+    recordProfileGameResult("slots", didWin);
+    setStatus(didWin ? `You won ${payout} credits!` : "No win. Try again!");
+
+    if (user) {
+      try {
+        await updateCredits(finalBank);
+        await recordGameResult({ won: didWin, delta: didWin ? payout - bet : -bet });
+      } catch (err) {
+        console.error("Failed to record slots result:", err);
+      }
+    }
+
+    setSpinning(false);
+  }
+
   async function spin() {
     if (spinning) return;
     if (bet <= 0) {
@@ -132,6 +152,12 @@ export default function SlotsPage() {
       setStatus("Your bet exceeds your credits.");
       return;
     }
+
+    intervalRefs.current.forEach((id) => {
+      if (id !== null) window.clearInterval(id);
+    });
+    timeoutRefs.current.forEach((id) => window.clearTimeout(id));
+    timeoutRefs.current = [];
 
     setSpinning(true);
     setStatus("Spinning...");
@@ -149,39 +175,45 @@ export default function SlotsPage() {
     }
 
     const results: [SymbolKey, SymbolKey, SymbolKey] = [randomSymbol(), randomSymbol(), randomSymbol()];
-    setAnimatedStrips([buildStrip(results[0]), buildStrip(results[1]), buildStrip(results[2])]);
+    setReelSpinning([true, true, true]);
 
-    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    [0, 1, 2].forEach((index) => {
+      intervalRefs.current[index] = window.setInterval(() => {
+        setReels((prev) => {
+          const next: [SymbolKey, SymbolKey, SymbolKey] = [...prev] as [SymbolKey, SymbolKey, SymbolKey];
+          next[index] = randomSymbol();
+          return next;
+        });
+      }, 90 + index * 15);
+    });
 
-    timeoutRef.current = window.setTimeout(async () => {
-      setAnimatedStrips([null, null, null]);
-      setReels(results);
+    const stopTimes = [900, 1250, 1600];
 
-      const payout = evaluateWin(results, bet);
-      const didWin = payout > 0;
-      const finalBank = didWin ? bankAfterBet + payout : bankAfterBet;
+    stopTimes.forEach((delay, index) => {
+      const timeoutId = window.setTimeout(() => {
+        const intervalId = intervalRefs.current[index];
+        if (intervalId !== null) window.clearInterval(intervalId);
+        intervalRefs.current[index] = null;
 
-      setBank(finalBank);
-      saveBank(finalBank);
-      recordProfileGameResult("slots", didWin);
+        setReels((prev) => {
+          const next: [SymbolKey, SymbolKey, SymbolKey] = [...prev] as [SymbolKey, SymbolKey, SymbolKey];
+          next[index] = results[index];
+          return next;
+        });
 
-      if (didWin) {
-        setStatus(`You won ${payout} credits!`);
-      } else {
-        setStatus("No win. Try again!");
-      }
+        setReelSpinning((prev) => {
+          const next: [boolean, boolean, boolean] = [...prev] as [boolean, boolean, boolean];
+          next[index] = false;
+          return next;
+        });
 
-      if (user) {
-        try {
-          await updateCredits(finalBank);
-          await recordGameResult({ won: didWin, delta: didWin ? payout - bet : -bet });
-        } catch (err) {
-          console.error("Failed to record slots result:", err);
+        if (index === 2) {
+          void finalizeSpin(results, bankAfterBet);
         }
-      }
+      }, delay);
 
-      setSpinning(false);
-    }, 1350);
+      timeoutRefs.current.push(timeoutId);
+    });
   }
 
   return (
@@ -205,30 +237,28 @@ export default function SlotsPage() {
         }
       />
 
-      <main className="container stack">
+      <main className="container stack slots-main">
         <section className="panel">
           <h2 className="panel-header">Classic Slots</h2>
           <p className="panel-subtle">Three reels, single payline. Line up matching symbols to win. 7s and diamonds pay best.</p>
 
           <div className="slot-wrap">
             <div className="reels">
-              {[0, 1, 2].map((index) => (
-                <div className={`reel ${animatedStrips[index] ? "spin" : ""}`} key={index} aria-label={`Reel ${index + 1}`}>
-                  {animatedStrips[index] ? (
-                    <div className="symbol-strip" style={{ ["--spin-ms" as string]: `${900 + index * 150}ms` }}>
-                      {animatedStrips[index]?.map((glyph, itemIndex) => (
-                        <div className="symbol" key={`${index}-${itemIndex}-${glyph}`}>
-                          {renderSymbol(glyph)}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
+              {([0, 1, 2] as const).map((index) => (
+                <div className={`reel ${reelSpinning[index] ? "spinning" : ""}`} key={index} aria-label={`Reel ${index + 1}`}>
+                  <div className="reel-window">
                     <div className="symbol">{renderSymbol(reels[index])}</div>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
             <div className="payline-marker" aria-hidden="true"></div>
+          </div>
+
+          <div className="slots-top-actions">
+            <button className="btn btn-primary slots-spin-btn slots-spin-btn-top" onClick={spin} disabled={spinning || bet <= 0}>
+              {spinning ? "Spinning..." : `Spin ${bet > 0 ? `(${bet})` : ""}`}
+            </button>
           </div>
 
           <div className="toast info mt-6" role="status" aria-live="polite">
@@ -272,10 +302,6 @@ export default function SlotsPage() {
                 <span>1x</span>
               </div>
             </div>
-
-            <button className="btn btn-primary slots-spin-btn" onClick={spin} disabled={spinning || bet <= 0}>
-              {spinning ? "Spinning..." : "Spin"}
-            </button>
           </div>
         </div>
       </main>

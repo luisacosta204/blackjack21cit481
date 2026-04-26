@@ -2,7 +2,7 @@
   min-height: 100vh;
 }
 
-.slots-page main.container.stack {
+.slots-main {
   padding: 24px;
   display: grid;
   gap: 24px;
@@ -19,7 +19,7 @@
   padding: clamp(14px, 3vw, 24px);
   position: relative;
   overflow: hidden;
-  margin: 24px 0;
+  margin: 24px 0 18px;
 }
 
 .slot-wrap::after {
@@ -52,6 +52,13 @@
   position: relative;
 }
 
+.reel-window {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
 .symbol {
   display: grid;
   place-items: center;
@@ -75,23 +82,15 @@
   object-fit: contain;
 }
 
-.reel.spin .symbol-strip {
-  animation: spin var(--spin-ms, 900ms) cubic-bezier(.2,.9,.25,1) forwards;
-  will-change: transform;
+.reel.spinning .symbol-image {
+  animation: slot-symbol-spin 130ms linear infinite;
+  filter: blur(1.2px) drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45));
 }
 
-.symbol-strip {
-  display: grid;
-  gap: 12px;
-  place-items: center;
-  position: absolute;
-  top: -135%;
-  width: 100%;
-}
-
-@keyframes spin {
-  0% { transform: translateY(-72%); }
-  100% { transform: translateY(6%); }
+@keyframes slot-symbol-spin {
+  0% { transform: translateY(-12px) scale(0.96); opacity: 0.65; }
+  50% { transform: translateY(12px) scale(1.04); opacity: 0.95; }
+  100% { transform: translateY(-12px) scale(0.96); opacity: 0.65; }
 }
 
 .payline-marker {
@@ -105,13 +104,20 @@
   pointer-events: none;
 }
 
+.slots-top-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 6px;
+}
+
 .bet-line {
   display: flex;
   gap: 10px;
   align-items: baseline;
 }
 
-.bet-line .muted {
+.bet-line .muted,
+.pay-row.muted {
   color: #9aa4a8;
 }
 
@@ -128,6 +134,10 @@
 .slots-btn-row .btn,
 .slots-spin-btn {
   width: 100%;
+}
+
+.slots-spin-btn-top {
+  max-width: 320px;
 }
 
 .paytable {
@@ -150,7 +160,7 @@
 }
 
 @media (max-width: 768px) {
-  .slots-page main.container.stack {
+  .slots-main {
     padding: 18px;
   }
 
