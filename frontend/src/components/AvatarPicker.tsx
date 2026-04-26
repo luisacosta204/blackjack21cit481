@@ -19,17 +19,31 @@ export default function AvatarPicker({ avatarSrc, setAvatarSrc, options }: Props
 
     const position = () => {
       const btn = btnRef.current;
+      const panel = panelRef.current;
       if (!btn) return;
+
       const rect = btn.getBoundingClientRect();
+      const panelWidth = panel?.offsetWidth ?? 292;
+      const viewportPadding = 16;
+      const centeredLeft = rect.left + rect.width / 2 - panelWidth / 2;
+      const clampedLeft = Math.max(
+        viewportPadding,
+        Math.min(centeredLeft, window.innerWidth - panelWidth - viewportPadding)
+      );
+
       setPos({
-        top: window.scrollY + rect.bottom + 8,
-        left: window.scrollX + rect.left - 8,
+        top: rect.bottom + 10,
+        left: clampedLeft,
       });
     };
 
     position();
     window.addEventListener("resize", position);
-    return () => window.removeEventListener("resize", position);
+    window.addEventListener("scroll", position, true);
+    return () => {
+      window.removeEventListener("resize", position);
+      window.removeEventListener("scroll", position, true);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -82,12 +96,11 @@ export default function AvatarPicker({ avatarSrc, setAvatarSrc, options }: Props
     document.addEventListener("click", onDocClick, { capture: true });
     document.addEventListener("keydown", onKeyDown);
 
-    // focus first option
     const focusables = getFocusable();
     focusables[0]?.focus();
 
     return () => {
-      document.removeEventListener("click", onDocClick, { capture: true } as any);
+      document.removeEventListener("click", onDocClick, { capture: true } as EventListenerOptions);
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [open]);

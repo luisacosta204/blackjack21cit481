@@ -11,12 +11,12 @@ import { handValue } from "../features/blackjack/engine";
 import { buildShoe, draw } from "../features/blackjack/deck";
 import { useDeckTheme } from "../features/blackjack/useDeckTheme";
 import CardImage from "../features/blackjack/CardImage";
-import { chipUrlForBank } from "../utils/chips";
 
-import "./Blackjack/blackjack.css";
-import "../styles/bank-chip.css";
+
+import "./blackjack/blackjack.css";
 import { recordGameResult } from "../api/gameResults";
 import { updateCredits } from "../api/credits";
+import { recordProfileGameResult } from "../utils/profileStats";
 
 // ── Bank constants ────────────────────────────────────────────────────────────
 const BANK_KEY = "bjBank";
@@ -35,16 +35,11 @@ export default function BlackjackPage() {
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
 
   const username = user?.username ?? getOrCreateGuestUsername();
+  const creditsText = user ? String(user.credits ?? 0) : "—";
 
   // ── Deck theme ────────────────────────────────────────────────────────────
-  const {
-    textures,
-    backImage,
-    deckId,
-    setDeckId,
-    deckOptions,
-    loading: deckLoading,
-  } = useDeckTheme();
+  const { textures, backImage, deckId, setDeckId, deckOptions, loading: deckLoading } =
+    useDeckTheme();
 
   // ── Bank & Bet state ──────────────────────────────────────────────────────
   const [bank, setBank] = useState<number>(() => loadBank());
@@ -75,27 +70,6 @@ export default function BlackjackPage() {
       ? handValue([dealerCards[0]])
       : handValue(dealerCards)
     : null;
-
-  function hiLoValue(card: Card): number {
-    if (["2", "3", "4", "5", "6"].includes(card.rank)) return 1;
-    if (["10", "J", "Q", "K", "A"].includes(card.rank)) return -1;
-    return 0;
-  }
-
-  const visibleDealerCards =
-    inRound && !roundOver ? dealerCards.slice(0, 1) : dealerCards;
-
-  const runningCount = [...playerCards, ...visibleDealerCards].reduce(
-    (sum, card) => sum + hiLoValue(card),
-    0
-  );
-
-  const decksRemaining = Math.max(shoe.length / 52, 1);
-  const trueCount = runningCount / decksRemaining;
-
-  let countLabel = "Neutral";
-  if (trueCount >= 2) countLabel = "Hot";
-  else if (trueCount <= -2) countLabel = "Cold";
 
   const canDeal = (!inRound || roundOver) && betPerHand > 0 && bank > 0;
   const canHit = inRound && !roundOver;
@@ -153,22 +127,28 @@ export default function BlackjackPage() {
     setRoundOver(true);
     setInRound(false);
 
+    //Apply payout
     setBank((prev) => {
       let delta = 0;
-      if (outcome === "win") delta = betPerHand;
+      if (outcome === "win")       delta = betPerHand;
       if (outcome === "blackjack") delta = Math.floor(betPerHand * 1.5);
-      if (outcome === "lose") delta = -betPerHand;
-
+      if (outcome === "lose")      delta = -betPerHand;
+      // push: delta = 0
+      
       const next = prev + delta;
       saveBank(next);
 
+      // Record result in DB (only for logged-in users)
       if (user) {
         const won = outcome === "win" || outcome === "blackjack";
 
+        // Record game result
         recordGameResult({ won, delta }).catch((err) => {
           console.error("Failed to record game result:", err);
+          //Don't block the UI - just log the error
         });
 
+        // Update credits in database
         updateCredits(next).catch((err) => {
           console.error("Failed to update credits:", err);
         });
@@ -194,42 +174,18 @@ export default function BlackjackPage() {
     const dScore = handValue(currentDealer);
 
     if (dScore > 21) {
-      finishRound(
-        currentDealer,
-        currentPlayer,
-        `Dealer busts (${dScore}). You win!`,
-        currentShoe,
-        "win"
-      );
+      finishRound(currentDealer, currentPlayer, `Dealer busts (${dScore}). You win!`, currentShoe, "win");
       return;
     }
     if (pScore > dScore) {
-      finishRound(
-        currentDealer,
-        currentPlayer,
-        `You win! (${pScore} vs ${dScore})`,
-        currentShoe,
-        "win"
-      );
+      finishRound(currentDealer, currentPlayer, `You win! (${pScore} vs ${dScore})`, currentShoe, "win");
       return;
     }
     if (pScore < dScore) {
-      finishRound(
-        currentDealer,
-        currentPlayer,
-        `Dealer wins. (${dScore} vs ${pScore})`,
-        currentShoe,
-        "lose"
-      );
+      finishRound(currentDealer, currentPlayer, `Dealer wins. (${dScore} vs ${pScore})`, currentShoe, "lose");
       return;
     }
-    finishRound(
-      currentDealer,
-      currentPlayer,
-      `Push. (${pScore} vs ${dScore})`,
-      currentShoe,
-      "push"
-    );
+    finishRound(currentDealer, currentPlayer, `Push. (${pScore} vs ${dScore})`, currentShoe, "push");
   };
 
   // ── Hit ───────────────────────────────────────────────────────────────────
@@ -245,13 +201,7 @@ export default function BlackjackPage() {
     const pScore = handValue(newPlayer);
 
     if (pScore > 21) {
-      finishRound(
-        dealerCards,
-        newPlayer,
-        `Bust (${pScore}). Dealer wins.`,
-        currentShoe,
-        "lose"
-      );
+      finishRound(dealerCards, newPlayer, `Bust (${pScore}). Dealer wins.`, currentShoe, "lose");
       return;
     }
     if (pScore === 21) {
@@ -277,14 +227,10 @@ export default function BlackjackPage() {
 
     let currentShoe = shoe;
 
-    const d1 = draw(currentShoe);
-    currentShoe = d1.shoe;
-    const p1 = draw(currentShoe);
-    currentShoe = p1.shoe;
-    const d2 = draw(currentShoe);
-    currentShoe = d2.shoe;
-    const p2 = draw(currentShoe);
-    currentShoe = p2.shoe;
+    const d1 = draw(currentShoe); currentShoe = d1.shoe;
+    const p1 = draw(currentShoe); currentShoe = p1.shoe;
+    const d2 = draw(currentShoe); currentShoe = d2.shoe;
+    const p2 = draw(currentShoe); currentShoe = p2.shoe;
 
     const newDealer = [d1.card, d2.card];
     const newPlayer = [p1.card, p2.card];
@@ -300,21 +246,9 @@ export default function BlackjackPage() {
 
     if (pScore === 21 && newPlayer.length === 2) {
       if (dScore === 21) {
-        finishRound(
-          newDealer,
-          newPlayer,
-          "Push — both have Blackjack.",
-          currentShoe,
-          "push"
-        );
+        finishRound(newDealer, newPlayer, "Push — both have Blackjack.", currentShoe, "push");
       } else {
-        finishRound(
-          newDealer,
-          newPlayer,
-          "Blackjack! You win 3:2.",
-          currentShoe,
-          "blackjack"
-        );
+        finishRound(newDealer, newPlayer, "Blackjack! You win 3:2.", currentShoe, "blackjack");
       }
       return;
     }
@@ -329,55 +263,54 @@ export default function BlackjackPage() {
         avatarSrc={avatarSrc}
         username={username}
         subtitle={
-          <span
-            id="bankBadge"
-            aria-label={`Bank: ${bank} chips`}
-            style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bank)}")` }}
-          >
-            {bank}
-          </span>
+          <>
+            Credits: <strong>{creditsText}</strong>
+          </>
         }
         right={
-          <div className="bj-header-controls">
-            <Link
-              id="backButton"
-              to="/home"
-              className="btn btn-secondary bj-header-home"
-            >
+          <div className="right cluster">
+            <Link id="backButton" to="/home" className="back-button btn-secondary btn">
               ⮐ Back to Home
             </Link>
 
-            <label htmlFor="deckSelect" className="select bj-deck-select">
-              <span>Deck:</span>
-              <select
-                id="deckSelect"
-                aria-label="Deck theme select"
-                value={deckId}
-                onChange={(e) => setDeckId(e.target.value)}
-              >
-                {deckOptions.length > 0 ? (
-                  deckOptions.map((opt: { id: string; name: string }) => (
-                    <option key={opt.id} value={opt.id}>
-                      {opt.name}
-                    </option>
-                  ))
-                ) : (
-                  <option value="style_1">Style 1 (Images)</option>
-                )}
-              </select>
+            <label htmlFor="deckSelect" className="muted">
+              Deck:
             </label>
+            {/* Deck select — now live, populated from manifest */}
+            <select
+              id="deckSelect"
+              className="select"
+              aria-label="Deck theme select"
+              value={deckId}
+              onChange={(e) => setDeckId(e.target.value)}
+            >
+              {deckOptions.length > 0 ? (
+                deckOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.name}
+                  </option>
+                ))
+              ) : (
+                /* Fallback while manifest loads */
+                <option value="style_1">Style 1 (Images)</option>
+              )}
+            </select>
+
+            <span className="badge" id="bankBadge" title="Your chip balance">
+              Bank: {bank}
+            </span>
           </div>
         }
       />
 
       <main className="container bj-layout">
+        {/* Playfield */}
         <section className="panel bj-table">
           <div className="bj-title">
             <div>
               <h2 className="panel-header">Table</h2>
               <p className="panel-subtle">
-                Beat the dealer without going over 21. Blackjack pays 3:2. Dealer
-                stands on 17.
+                Beat the dealer without going over 21. Blackjack pays 3:2. Dealer stands on 17.
               </p>
             </div>
 
@@ -385,17 +318,15 @@ export default function BlackjackPage() {
               <span className="muted">Shoe:</span>{" "}
               <span id="shoeInfo">{shoe.length} cards</span>
               <span className="muted"> | Count:</span>{" "}
-              <strong id="countInfo">
-                {trueCount >= 0 ? "+" : ""}
-                {trueCount.toFixed(1)}
-              </strong>
+              <strong id="countInfo">—</strong>
               <span className="muted"> (</span>
-              <strong id="countLabel">{countLabel}</strong>
+              <strong id="countLabel">Neutral</strong>
               <span className="muted">)</span>
             </div>
           </div>
 
           <div className="table-wrap">
+            {/* ── Dealer hand ── */}
             <div className="row">
               <div className="hand">
                 <div className="label">Dealer</div>
@@ -405,6 +336,7 @@ export default function BlackjackPage() {
                     <CardImage
                       key={`dealer-${c.rank}-${c.suit}-${i}`}
                       card={c}
+                      // Hide the hole card (index 1) while round is active
                       faceDown={inRound && !roundOver && i === 1}
                       textures={textures}
                       backImage={backImage}
@@ -423,6 +355,7 @@ export default function BlackjackPage() {
               </div>
             </div>
 
+            {/* ── Player hand ── */}
             <div className="row">
               <div className="hand">
                 <div className="label">You</div>
@@ -446,6 +379,7 @@ export default function BlackjackPage() {
             </div>
           </div>
 
+          {/* Loading indicator while deck textures fetch */}
           {deckLoading && (
             <p className="panel-subtle" style={{ textAlign: "center", marginTop: 8 }}>
               Loading card images…
@@ -457,6 +391,7 @@ export default function BlackjackPage() {
           </div>
         </section>
 
+        {/* Controls */}
         <section className="bj-controls" aria-label="Betting and action controls">
           <div className="panel">
             <h3 className="panel-header">Betting</h3>
@@ -536,11 +471,8 @@ export default function BlackjackPage() {
                 New Round
               </button>
 
-              <button
-                className="btn-secondary btn"
-                type="button"
-                onClick={reshuffle}
-              >
+              {/* Dev helper — remove before shipping */}
+              <button className="btn-secondary btn" type="button" onClick={reshuffle}>
                 Reshuffle
               </button>
             </div>
@@ -577,13 +509,17 @@ export default function BlackjackPage() {
               <button className="btn-secondary btn" id="splitBtn" disabled type="button">
                 Split
               </button>
+              <button className="btn-secondary btn" id="insuranceBtn" disabled type="button">
+                Take Insurance
+              </button>
               <button
                 className="btn-secondary btn"
-                id="insuranceBtn"
+                id="changeDeckBtn"
+                title="Switch card style"
                 disabled
                 type="button"
               >
-                Take Insurance
+                Change Deck
               </button>
 
               <button

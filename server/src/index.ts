@@ -154,6 +154,45 @@ app.post("/game-results", async (req, res) => {
   }
 });
 
+
+app.post("/account/email", async (req, res) => {
+  try {
+    const auth = req.headers.authorization || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (!token) return res.status(401).json({ ok: false, error: "Missing token" });
+
+    const jwtUser = verifyToken(token);
+    const rawEmail = typeof req.body?.email === "string" ? req.body.email.trim() : "";
+
+    if (!rawEmail) {
+      return res.status(400).json({ ok: false, error: "Email is required" });
+    }
+
+    const email = rawEmail.toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ ok: false, error: "Enter a valid email address" });
+    }
+
+    const result = await pool.query(
+      `update public.users set email = $1 where id = $2 returning email`,
+      [email, jwtUser.id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "User not found" });
+    }
+
+    res.json({ ok: true, email: result.rows[0].email });
+  } catch (err: any) {
+    if (err?.code === "23505") {
+      return res.status(409).json({ ok: false, error: "That email is already in use" });
+    }
+    console.error(err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
 app.post("/update-credits", async (req, res) => {
   try {
     // Extract JWT

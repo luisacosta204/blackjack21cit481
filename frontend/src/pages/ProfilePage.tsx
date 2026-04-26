@@ -1,12 +1,14 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AvatarPicker from "../components/AvatarPicker";
 import HeaderUserNav from "../components/HeaderUserNav";
+import { updateEmail } from "../api/account";
+import { updateCredits } from "../api/credits";
 import { useAvatar } from "../hooks/useAvatar";
 import { useMe } from "../hooks/useMe";
 import { getOrCreateGuestUsername } from "../utils/guest";
 import CenteredMain from "../components/CenteredMain";
-import { chipUrlForBank } from "../utils/chips";
+import { getProfileOverview, resetProfileStats } from "../utils/profileStats";
 
 const AVATAR_OPTIONS = [
   { src: "/assets/avatars/Flower.png", alt: "Flower" },
@@ -17,18 +19,71 @@ const AVATAR_OPTIONS = [
   { src: "/assets/avatars/Dollarydoos.png", alt: "Dollarydoos" },
 ];
 
+const START_BANK = 500;
+const BANK_KEY = "bank";
+
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, loading } = useMe();
-  const { avatarSrc, setAvatarSrc } = useAvatar("/assets/avatars/1.png");
-
+  const { avatarSrc, setAvatarSrc } = useAvatar("/assets/avatars/robot.png");
   const username = useMemo(() => user?.username ?? getOrCreateGuestUsername(), [user]);
-  const emailText = user?.email ?? "you@casino.com";
-  const bankValue = Number(localStorage.getItem("bjBank") ?? 500);
+
+  const overview = useMemo(() => getProfileOverview(), []);
+  const [emailValue, setEmailValue] = useState(user?.email ?? "");
+  const [emailStatus, setEmailStatus] = useState<string>("");
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [resettingBank, setResettingBank] = useState(false);
+
+  useEffect(() => {
+    setEmailValue(user?.email ?? "");
+  }, [user?.email]);
 
   const onLogout = () => {
     localStorage.removeItem("token");
     navigate("/", { replace: true });
+  };
+
+  const onResetBank = async () => {
+    setResettingBank(true);
+    localStorage.setItem(BANK_KEY, String(START_BANK));
+    resetProfileStats();
+
+    if (localStorage.getItem("token")) {
+      try {
+        await updateCredits(START_BANK);
+      } catch (err) {
+        console.error("Failed to reset bank in database:", err);
+      }
+    }
+
+    setResettingBank(false);
+    navigate(0);
+  };
+
+  const onSaveEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailStatus("");
+
+    if (!localStorage.getItem("token")) {
+      setEmailStatus("Log in to save an email address.");
+      return;
+    }
+
+    const nextEmail = emailValue.trim();
+    if (!nextEmail) {
+      setEmailStatus("Enter an email address first.");
+      return;
+    }
+
+    setSavingEmail(true);
+    try {
+      await updateEmail(nextEmail);
+      setEmailStatus("Email updated.");
+    } catch (err) {
+      setEmailStatus(err instanceof Error ? err.message : "Could not update email.");
+    } finally {
+      setSavingEmail(false);
+    }
   };
 
   return (
@@ -37,13 +92,9 @@ export default function ProfilePage() {
         avatarSrc={avatarSrc}
         username={username}
         subtitle={
-          <span
-            id="bankBadge"
-            aria-label={`Bank: ${bankValue} chips`}
-            style={{ ["--bank-chip-url" as string]: `url("${chipUrlForBank(bankValue)}")` }}
-          >
-            {bankValue}
-          </span>
+          <>
+            Credits: <strong>{user ? user.credits : localStorage.getItem(BANK_KEY) ?? START_BANK}</strong>
+          </>
         }
         right={
           <>
@@ -57,19 +108,26 @@ export default function ProfilePage() {
         }
       />
 
-      <CenteredMain maxWidth={1200}>
+      <CenteredMain maxWidth={1280}>
         <section className="panel stack">
-          <div className="cluster" style={{ alignItems: "center", justifyContent: "space-between" }}>
-            <AvatarPicker
-              avatarSrc={avatarSrc}
-              setAvatarSrc={setAvatarSrc}
-              options={AVATAR_OPTIONS}
-            />
+          <div className="cluster" style={{ alignItems: "flex-start", justifyContent: "space-between" }}>
+            <div className="stack" style={{ gap: 12 }}>
+              <AvatarPicker avatarSrc={avatarSrc} setAvatarSrc={setAvatarSrc} options={AVATAR_OPTIONS} />
+              <div>
+                <h2 className="panel-header" style={{ marginBottom: 4 }}>{username}</h2>
+                <p className="panel-subtle" style={{ marginBottom: 0 }}>Tap the avatar to change your profile picture.</p>
+              </div>
+            </div>
 
-            <div className="cluster">
-              <a href="#" className="btn btn-secondary" onClick={(e) => e.preventDefault()}>
-                Edit Profile
-              </a>
+            <div className="stack" style={{ gap: 12, minWidth: 220 }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onResetBank}
+                disabled={resettingBank}
+              >
+                {resettingBank ? "Resetting..." : "Reset Bank"}
+              </button>
 
               <button
                 type="button"
@@ -82,106 +140,107 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="grid cols-3">
+          <div className="grid cols-3 profile-grid">
             <div className="panel">
               <h3 className="panel-header">Overview</h3>
-              <p className="panel-subtle">Quick stats</p>
-              <div className="grid cols-3">
-                <div className="stack">
-                  <strong>Games</strong>
-                  <div>512</div>
-                </div>
-                <div className="stack">
-                  <strong>Wins</strong>
-                  <div>318</div>
-                </div>
-                <div className="stack">
-                  <strong>Best Streak</strong>
-                  <div>11</div>
-                </div>
-              </div>
-            </div>
+              <p className="panel-subtle">Wins and losses by game</p>
 
-            <div className="panel">
-              <h3 className="panel-header">Recent Activity</h3>
-              <p className="panel-subtle">Last 5 sessions</p>
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Mode</th>
-                    <th>Result</th>
-                    <th>Score</th>
+                    <th>Game</th>
+                    <th>Wins</th>
+                    <th>Losses</th>
                   </tr>
                 </thead>
                 <tbody>
+                  {overview.lines.map((line) => (
+                    <tr key={line.key}>
+                      <td>{line.label}</td>
+                      <td>{line.wins}</td>
+                      <td>{line.losses}</td>
+                    </tr>
+                  ))}
                   <tr>
-                    <td>Today</td>
-                    <td>Standard</td>
-                    <td>
-                      <span className="badge win">Win</span>
-                    </td>
-                    <td>420</td>
-                  </tr>
-                  <tr>
-                    <td>Yesterday</td>
-                    <td>Standard</td>
-                    <td>
-                      <span className="badge lose">Loss</span>
-                    </td>
-                    <td>180</td>
-                  </tr>
-                  <tr>
-                    <td>2 days ago</td>
-                    <td>High Roller</td>
-                    <td>
-                      <span className="badge win">Win</span>
-                    </td>
-                    <td>890</td>
-                  </tr>
-                  <tr>
-                    <td>3 days ago</td>
-                    <td>Standard</td>
-                    <td>
-                      <span className="badge lose">Loss</span>
-                    </td>
-                    <td>120</td>
-                  </tr>
-                  <tr>
-                    <td>4 days ago</td>
-                    <td>Standard</td>
-                    <td>
-                      <span className="badge win">Win</span>
-                    </td>
-                    <td>370</td>
+                    <td><strong>Total</strong></td>
+                    <td><strong>{overview.total.wins}</strong></td>
+                    <td><strong>{overview.total.losses}</strong></td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             <div className="panel">
+              <h3 className="panel-header">Favorite Game</h3>
+              <p className="panel-subtle">Most played game so far</p>
+
+              {overview.favorite ? (
+                <div className="stack" style={{ gap: 14 }}>
+                  <div>
+                    <div style={{ fontSize: 28, fontWeight: 700 }}>{overview.favorite.label}</div>
+                    <div className="panel-subtle" style={{ marginTop: 6, marginBottom: 0 }}>
+                      {overview.favorite.games} total games played
+                    </div>
+                  </div>
+
+                  <div className="grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+                    <div className="panel" style={{ padding: 16 }}>
+                      <div className="panel-subtle" style={{ marginBottom: 8 }}>Wins</div>
+                      <strong>{overview.favorite.wins}</strong>
+                    </div>
+                    <div className="panel" style={{ padding: 16 }}>
+                      <div className="panel-subtle" style={{ marginBottom: 8 }}>Losses</div>
+                      <strong>{overview.favorite.losses}</strong>
+                    </div>
+                    <div className="panel" style={{ padding: 16 }}>
+                      <div className="panel-subtle" style={{ marginBottom: 8 }}>Win Rate</div>
+                      <strong>{overview.favorite.winRate}%</strong>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Link
+                      to={overview.favorite.key === "slots" ? "/slots" : overview.favorite.key === "blackjack" ? "/blackjack" : "/home"}
+                      className="btn btn-ghost"
+                    >
+                      Play {overview.favorite.label}
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="toast info" style={{ display: "block" }}>
+                  No game history yet. Play a few rounds and your favorite game will show up here.
+                </div>
+              )}
+            </div>
+
+            <div className="panel">
               <h3 className="panel-header">Account</h3>
-              <p className="panel-subtle">Settings</p>
-              <div className="stack">
-                <div className="cluster" style={{ justifyContent: "space-between" }}>
-                  <div>Email</div>
-                  <div>{emailText}</div>
+              <p className="panel-subtle">Email on file</p>
+
+              <div className="stack" style={{ gap: 16 }}>
+                <div className="panel" style={{ padding: 18 }}>
+                  <div className="panel-subtle" style={{ marginBottom: 8 }}>Current email</div>
+                  <strong>{user?.email?.trim() ? user.email : "No email associated with this account yet."}</strong>
                 </div>
-                <div className="cluster" style={{ justifyContent: "space-between" }}>
-                  <div>Two-Factor Auth</div>
-                  <div>
-                    <span className="badge">Off</span>
+
+                <form className="stack" style={{ gap: 12 }} onSubmit={onSaveEmail}>
+                  <label htmlFor="profileEmail">Change email</label>
+                  <div className="input-wrap">
+                    <input
+                      id="profileEmail"
+                      type="email"
+                      placeholder="name@example.com"
+                      value={emailValue}
+                      onChange={(e) => setEmailValue(e.target.value)}
+                    />
                   </div>
-                </div>
-                <div className="cluster" style={{ justifyContent: "space-between" }}>
-                  <div>Newsletter</div>
-                  <div>
-                    <span className="badge">Subscribed</span>
-                  </div>
-                </div>
-                <a href="#" className="btn btn-ghost" onClick={(e) => e.preventDefault()}>
-                  Manage Settings
-                </a>
+                  <button type="submit" className="btn btn-secondary" disabled={savingEmail}>
+                    {savingEmail ? "Saving..." : user?.email ? "Change Email" : "Add Email"}
+                  </button>
+                </form>
+
+                {emailStatus ? <div className="toast info" style={{ display: "block" }}>{emailStatus}</div> : null}
               </div>
             </div>
           </div>
