@@ -103,9 +103,9 @@ export default function ProfilePage() {
         avatarSrc={avatarSrc}
         username={username}
         subtitle={
-          <>
-            Credits: <strong>{user ? user.credits : localStorage.getItem(BANK_KEY) ?? START_BANK}</strong>
-          </>
+          <span id="bankBadge" aria-label={`Bank: ${user ? user.credits : localStorage.getItem(BANK_KEY) ?? START_BANK} chips`}>
+            {user ? user.credits : localStorage.getItem(BANK_KEY) ?? START_BANK}
+          </span>
         }
         right={
           <>

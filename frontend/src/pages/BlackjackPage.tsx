@@ -35,7 +35,6 @@ export default function BlackjackPage() {
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
 
   const username = user?.username ?? getOrCreateGuestUsername();
-  const creditsText = user ? String(user.credits ?? 0) : "—";
 
   // ── Deck theme ────────────────────────────────────────────────────────────
   const { textures, backImage, deckId, setDeckId, deckOptions, loading: deckLoading } =
@@ -266,42 +265,36 @@ export default function BlackjackPage() {
         avatarSrc={avatarSrc}
         username={username}
         subtitle={
-          <>
-            Credits: <strong>{creditsText}</strong>
-          </>
+          <span id="bankBadge" aria-label={`Bank: ${bank} chips`}>
+            {bank}
+          </span>
         }
         right={
-          <div className="right cluster">
-            <Link id="backButton" to="/home" className="back-button btn-secondary btn">
+          <div className="right cluster bj-header-controls">
+            <Link id="backButton" to="/home" className="back-button btn-secondary btn bj-header-home">
               ⮐ Back to Home
             </Link>
 
-            <label htmlFor="deckSelect" className="muted">
-              Deck:
+            <label htmlFor="deckSelect" className="bj-deck-select">
+              <span>Deck:</span>
+              <select
+                id="deckSelect"
+                className="select"
+                aria-label="Deck theme select"
+                value={deckId}
+                onChange={(e) => setDeckId(e.target.value)}
+              >
+                {deckOptions.length > 0 ? (
+                  deckOptions.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="style_1">Style 1 (Images)</option>
+                )}
+              </select>
             </label>
-            {/* Deck select — now live, populated from manifest */}
-            <select
-              id="deckSelect"
-              className="select"
-              aria-label="Deck theme select"
-              value={deckId}
-              onChange={(e) => setDeckId(e.target.value)}
-            >
-              {deckOptions.length > 0 ? (
-                deckOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.name}
-                  </option>
-                ))
-              ) : (
-                /* Fallback while manifest loads */
-                <option value="style_1">Style 1 (Images)</option>
-              )}
-            </select>
-
-            <span className="badge" id="bankBadge" title="Your chip balance">
-              Bank: {bank}
-            </span>
           </div>
         }
       />

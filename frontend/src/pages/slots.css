@@ -1,0 +1,160 @@
+.slots-page {
+  min-height: 100vh;
+}
+
+.slots-layout {
+  padding-top: 18px;
+  padding-bottom: 24px;
+}
+
+.slots-controls-grid {
+  align-items: start;
+}
+
+.slot-wrap {
+  position: relative;
+  overflow: hidden;
+  margin: 24px 0 0;
+  padding: clamp(14px, 3vw, 24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: radial-gradient(800px 500px at 50% 30%, #143d2a, transparent);
+}
+
+.slot-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+  mask-image: radial-gradient(70% 70% at 50% 40%, black, transparent);
+}
+
+.reels {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(90px, 1fr));
+  gap: clamp(10px, 2vw, 18px);
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.reel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  height: clamp(180px, 24vw, 260px);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(180deg, #101315, #0a0d0f);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.28), inset 0 0 0 2px rgba(255, 255, 255, 0.05);
+}
+
+.symbol {
+  font-size: clamp(88px, 16vw, 144px);
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.6));
+  user-select: none;
+}
+
+.reel.spin .symbol-strip {
+  animation: spin var(--spin-ms, 900ms) cubic-bezier(.2,.9,.25,1) forwards;
+  will-change: transform;
+}
+
+.symbol-strip {
+  position: absolute;
+  top: -120%;
+  width: 100%;
+  display: grid;
+  gap: 12px;
+  place-items: center;
+}
+
+@keyframes spin {
+  0% { transform: translateY(-70%); }
+  100% { transform: translateY(0%); }
+}
+
+.payline-marker {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 0;
+  border-top: 2px dashed rgba(255, 255, 255, 0.22);
+  pointer-events: none;
+}
+
+.bet-line {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.bet-line .muted,
+.muted {
+  color: #9aa4a8;
+}
+
+.slots-chip-row {
+  margin-top: 16px;
+}
+
+.slots-button-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.slots-button-row .btn,
+.slots-spin-button {
+  width: 100%;
+}
+
+.win-glow {
+  box-shadow: 0 0 0 3px rgba(61, 255, 155, .35), 0 8px 30px rgba(0, 0, 0, .28);
+}
+
+.lose-glow {
+  box-shadow: 0 0 0 3px rgba(255, 59, 48, .35), 0 8px 30px rgba(0, 0, 0, .28);
+}
+
+.paytable {
+  display: grid;
+  gap: 8px;
+}
+
+.pay-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.slots-spin-button {
+  margin-top: 16px;
+}
+
+@media (max-width: 900px) {
+  .slots-controls-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .reels {
+    gap: 8px;
+  }
+
+  .reel {
+    height: 120px;
+  }
+
+  .slots-button-row {
+    flex-direction: column;
+  }
+}
