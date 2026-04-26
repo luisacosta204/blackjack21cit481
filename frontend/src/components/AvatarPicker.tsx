@@ -23,16 +23,16 @@ export default function AvatarPicker({ avatarSrc, setAvatarSrc, options }: Props
       if (!btn) return;
 
       const rect = btn.getBoundingClientRect();
-      const panelWidth = panel?.offsetWidth ?? 292;
+      const panelWidth = panel?.offsetWidth ?? 300;
       const viewportPadding = 16;
-      const centeredLeft = rect.left + rect.width / 2 - panelWidth / 2;
+      const alignedLeft = rect.left;
       const clampedLeft = Math.max(
         viewportPadding,
-        Math.min(centeredLeft, window.innerWidth - panelWidth - viewportPadding)
+        Math.min(alignedLeft, window.innerWidth - panelWidth - viewportPadding)
       );
 
       setPos({
-        top: rect.bottom + 10,
+        top: rect.bottom + 12,
         left: clampedLeft,
       });
     };
@@ -112,7 +112,7 @@ export default function AvatarPicker({ avatarSrc, setAvatarSrc, options }: Props
   };
 
   return (
-    <div className="cluster" style={{ alignItems: "center" }}>
+    <div className="cluster profile-avatar-wrap" style={{ alignItems: "center" }}>
       <button
         ref={btnRef}
         id="avatarBtn"
@@ -137,7 +137,7 @@ export default function AvatarPicker({ avatarSrc, setAvatarSrc, options }: Props
         aria-modal="true"
         aria-labelledby="avatarPickerTitle"
         hidden={!open}
-        style={{ top: pos.top, left: pos.left }}
+        style={{ top: pos.top, left: pos.left, position: "fixed" }}
       >
         <h3 id="avatarPickerTitle">Choose your avatar</h3>
 

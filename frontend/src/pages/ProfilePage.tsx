@@ -8,7 +8,8 @@ import { useAvatar } from "../hooks/useAvatar";
 import { useMe } from "../hooks/useMe";
 import { getOrCreateGuestUsername } from "../utils/guest";
 import CenteredMain from "../components/CenteredMain";
-import { getProfileOverview, resetProfileStats } from "../utils/profileStats";
+import { getProfileOverview, resetProfileStats, type GameKey } from "../utils/profileStats";
+import "./ProfilePage.css";
 
 const AVATAR_OPTIONS = [
   { src: "/assets/avatars/Flower.png", alt: "Flower" },
@@ -20,7 +21,14 @@ const AVATAR_OPTIONS = [
 ];
 
 const START_BANK = 500;
-const BANK_KEY = "bank";
+const BANK_KEY = "bjBank";
+
+const GAME_ROUTE: Record<GameKey, string> = {
+  blackjack: "/blackjack",
+  slots: "/slots",
+  craps: "/craps",
+  roulette: "/roulette",
+};
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -28,7 +36,8 @@ export default function ProfilePage() {
   const { avatarSrc, setAvatarSrc } = useAvatar("/assets/avatars/robot.png");
   const username = useMemo(() => user?.username ?? getOrCreateGuestUsername(), [user]);
 
-  const overview = useMemo(() => getProfileOverview(), []);
+  const [overviewVersion, setOverviewVersion] = useState(0);
+  const overview = useMemo(() => getProfileOverview(), [overviewVersion]);
   const [emailValue, setEmailValue] = useState(user?.email ?? "");
   const [emailStatus, setEmailStatus] = useState<string>("");
   const [savingEmail, setSavingEmail] = useState(false);
@@ -47,6 +56,7 @@ export default function ProfilePage() {
     setResettingBank(true);
     localStorage.setItem(BANK_KEY, String(START_BANK));
     resetProfileStats();
+    setOverviewVersion((value) => value + 1);
 
     if (localStorage.getItem("token")) {
       try {
@@ -57,7 +67,6 @@ export default function ProfilePage() {
     }
 
     setResettingBank(false);
-    navigate(0);
   };
 
   const onSaveEmail = async (e: React.FormEvent) => {
@@ -77,8 +86,10 @@ export default function ProfilePage() {
 
     setSavingEmail(true);
     try {
-      await updateEmail(nextEmail);
+      const result = await updateEmail(nextEmail);
+      setEmailValue(result.email ?? nextEmail);
       setEmailStatus("Email updated.");
+      navigate(0);
     } catch (err) {
       setEmailStatus(err instanceof Error ? err.message : "Could not update email.");
     } finally {
@@ -87,7 +98,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <>
+    <div className="profile-page-shell">
       <HeaderUserNav
         avatarSrc={avatarSrc}
         username={username}
@@ -108,18 +119,22 @@ export default function ProfilePage() {
         }
       />
 
-      <CenteredMain maxWidth={1280}>
-        <section className="panel stack">
-          <div className="cluster" style={{ alignItems: "flex-start", justifyContent: "space-between" }}>
-            <div className="stack" style={{ gap: 12 }}>
+      <CenteredMain maxWidth={1320}>
+        <div className="profile-main">
+        <section className="panel stack profile-shell-panel">
+          <div className="profile-hero">
+            <div className="profile-hero-left">
               <AvatarPicker avatarSrc={avatarSrc} setAvatarSrc={setAvatarSrc} options={AVATAR_OPTIONS} />
-              <div>
-                <h2 className="panel-header" style={{ marginBottom: 4 }}>{username}</h2>
-                <p className="panel-subtle" style={{ marginBottom: 0 }}>Tap the avatar to change your profile picture.</p>
+
+              <div className="profile-hero-copy">
+                <h2 className="panel-header profile-hero-name">{username}</h2>
+                <p className="panel-subtle profile-hero-subtitle">
+                  Tap the avatar to change your profile picture.
+                </p>
               </div>
             </div>
 
-            <div className="stack" style={{ gap: 12, minWidth: 220 }}>
+            <div className="profile-hero-actions">
               <button
                 type="button"
                 className="btn btn-secondary"
@@ -141,68 +156,70 @@ export default function ProfilePage() {
           </div>
 
           <div className="grid cols-3 profile-grid">
-            <div className="panel">
+            <div className="panel profile-card">
               <h3 className="panel-header">Overview</h3>
-              <p className="panel-subtle">Wins and losses by game</p>
+              <p className="panel-subtle">Wins and losses for all four games plus your total.</p>
 
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Game</th>
-                    <th>Wins</th>
-                    <th>Losses</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {overview.lines.map((line) => (
-                    <tr key={line.key}>
-                      <td>{line.label}</td>
-                      <td>{line.wins}</td>
-                      <td>{line.losses}</td>
+              <div className="table-wrapper profile-table-wrap">
+                <table className="table profile-table">
+                  <thead>
+                    <tr>
+                      <th>Game</th>
+                      <th>Wins</th>
+                      <th>Losses</th>
+                      <th>Total</th>
                     </tr>
-                  ))}
-                  <tr>
-                    <td><strong>Total</strong></td>
-                    <td><strong>{overview.total.wins}</strong></td>
-                    <td><strong>{overview.total.losses}</strong></td>
-                  </tr>
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {overview.lines.map((line) => (
+                      <tr key={line.key}>
+                        <td>{line.label}</td>
+                        <td>{line.wins}</td>
+                        <td>{line.losses}</td>
+                        <td>{line.wins + line.losses}</td>
+                      </tr>
+                    ))}
+                    <tr className="profile-total-row">
+                      <td><strong>Total</strong></td>
+                      <td><strong>{overview.total.wins}</strong></td>
+                      <td><strong>{overview.total.losses}</strong></td>
+                      <td><strong>{overview.total.games}</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <div className="panel">
+            <div className="panel profile-card">
               <h3 className="panel-header">Favorite Game</h3>
-              <p className="panel-subtle">Most played game so far</p>
+              <p className="panel-subtle">Your most played game right now.</p>
 
               {overview.favorite ? (
-                <div className="stack" style={{ gap: 14 }}>
-                  <div>
-                    <div style={{ fontSize: 28, fontWeight: 700 }}>{overview.favorite.label}</div>
-                    <div className="panel-subtle" style={{ marginTop: 6, marginBottom: 0 }}>
+                <div className="stack profile-favorite-stack">
+                  <div className="profile-favorite-top">
+                    <div className="profile-favorite-title">{overview.favorite.label}</div>
+                    <div className="panel-subtle profile-favorite-caption">
                       {overview.favorite.games} total games played
                     </div>
                   </div>
 
-                  <div className="grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
-                    <div className="panel" style={{ padding: 16 }}>
-                      <div className="panel-subtle" style={{ marginBottom: 8 }}>Wins</div>
+                  <div className="profile-favorite-stats">
+                    <div className="panel profile-mini-stat">
+                      <div className="panel-subtle profile-mini-label">Wins</div>
                       <strong>{overview.favorite.wins}</strong>
                     </div>
-                    <div className="panel" style={{ padding: 16 }}>
-                      <div className="panel-subtle" style={{ marginBottom: 8 }}>Losses</div>
+                    <div className="panel profile-mini-stat">
+                      <div className="panel-subtle profile-mini-label">Losses</div>
                       <strong>{overview.favorite.losses}</strong>
                     </div>
-                    <div className="panel" style={{ padding: 16 }}>
-                      <div className="panel-subtle" style={{ marginBottom: 8 }}>Win Rate</div>
+                    <div className="panel profile-mini-stat">
+                      <div className="panel-subtle profile-mini-label">Win Rate</div>
                       <strong>{overview.favorite.winRate}%</strong>
                     </div>
                   </div>
 
                   <div>
-                    <Link
-                      to={overview.favorite.key === "slots" ? "/slots" : overview.favorite.key === "blackjack" ? "/blackjack" : "/home"}
-                      className="btn btn-ghost"
-                    >
+                    <Link to={GAME_ROUTE[overview.favorite.key]} className="btn btn-ghost">
                       Play {overview.favorite.label}
                     </Link>
                   </div>
@@ -214,18 +231,20 @@ export default function ProfilePage() {
               )}
             </div>
 
-            <div className="panel">
+            <div className="panel profile-card">
               <h3 className="panel-header">Account</h3>
-              <p className="panel-subtle">Email on file</p>
+              <p className="panel-subtle">Email on file and the option to update it.</p>
 
-              <div className="stack" style={{ gap: 16 }}>
-                <div className="panel" style={{ padding: 18 }}>
-                  <div className="panel-subtle" style={{ marginBottom: 8 }}>Current email</div>
-                  <strong>{user?.email?.trim() ? user.email : "No email associated with this account yet."}</strong>
+              <div className="stack profile-account-stack">
+                <div className="panel profile-account-current">
+                  <div className="panel-subtle profile-current-label">Current email</div>
+                  <strong className="profile-current-email">
+                    {user?.email?.trim() ? user.email : "No email associated with this account yet."}
+                  </strong>
                 </div>
 
-                <form className="stack" style={{ gap: 12 }} onSubmit={onSaveEmail}>
-                  <label htmlFor="profileEmail">Change email</label>
+                <form className="stack profile-email-form" onSubmit={onSaveEmail}>
+                  <label htmlFor="profileEmail">{user?.email ? "Change email" : "Add email"}</label>
                   <div className="input-wrap">
                     <input
                       id="profileEmail"
@@ -240,12 +259,19 @@ export default function ProfilePage() {
                   </button>
                 </form>
 
+                {!user ? (
+                  <div className="toast info" style={{ display: "block" }}>
+                    Log in to attach an email address to your account.
+                  </div>
+                ) : null}
+
                 {emailStatus ? <div className="toast info" style={{ display: "block" }}>{emailStatus}</div> : null}
               </div>
             </div>
           </div>
         </section>
+        </div>
       </CenteredMain>
-    </>
+    </div>
   );
 }

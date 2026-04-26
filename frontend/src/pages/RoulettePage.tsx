@@ -5,6 +5,7 @@ import { useAvatar } from "../hooks/useAvatar";
 import { useMe } from "../hooks/useMe";
 import { getOrCreateGuestUsername } from "../utils/guest";
 import { updateCredits } from "../api/credits";
+import { recordProfileGameResult } from "../utils/profileStats";
 import { recordGameResult } from "../api/gameResults";
 import { chipUrlForBank } from "../utils/chips";
 import "./Roulette/roulette.css";
@@ -188,6 +189,7 @@ export default function RoulettePage() {
     setBank(nextBank);
     setSpinning(false);
     setStatus(didWin ? `You won! Payout x${mult}: +${winnings} chips.` : "No win this spin.");
+    recordProfileGameResult("roulette", didWin);
 
     if (user) {
       try {

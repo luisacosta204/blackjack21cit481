@@ -139,9 +139,12 @@ export default function BlackjackPage() {
       saveBank(next);
 
       // Record result in DB (only for logged-in users)
-      if (user) {
-        const won = outcome === "win" || outcome === "blackjack";
+      const won = outcome === "win" || outcome === "blackjack";
+      if (outcome !== "push") {
+        recordProfileGameResult("blackjack", won);
+      }
 
+      if (user) {
         // Record game result
         recordGameResult({ won, delta }).catch((err) => {
           console.error("Failed to record game result:", err);

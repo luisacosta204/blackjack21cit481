@@ -5,6 +5,7 @@ import { useAvatar } from "../hooks/useAvatar";
 import { useMe } from "../hooks/useMe";
 import { getOrCreateGuestUsername } from "../utils/guest";
 import { updateCredits } from "../api/credits";
+import { recordProfileGameResult } from "../utils/profileStats";
 import { recordGameResult } from "../api/gameResults";
 import { chipUrlForBank, chipUrlForTableTotal } from "../utils/chips";
 import "./craps/craps.css";
@@ -282,6 +283,10 @@ export default function CrapsPage() {
     setBank(nextBank);
     setPayoutLine(lines.length ? `${delta >= 0 ? "+" : ""}${delta}` : "—");
     setStatus(`${resolution.events.join(" ")} ${lines.join(" • ")}`.trim() || "No payouts.");
+
+    if (delta !== 0) {
+      recordProfileGameResult("craps", delta > 0);
+    }
 
     if (user) {
       try {
