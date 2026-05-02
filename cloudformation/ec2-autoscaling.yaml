@@ -1,0 +1,283 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for Blackjack21 EC2, Auto Scaling, and Application Load Balancer'
+
+Parameters:
+  NetworkStackName:
+    Type: String
+    Default: blackjack21-vpc
+    Description: Name of the VPC stack to import values from
+    
+  RDSStackName:
+    Type: String
+    Default: blackjack21-rds
+    Description: Name of the RDS stack to import values from
+    
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    Description: EC2 instance type
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t3.micro
+      - t3.small
+    
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: EC2 Key Pair for SSH access
+    
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: Latest Amazon Linux 2023 AMI ID
+    
+  CertificateArn:
+    Type: String
+    Description: ARN of the ACM certificate for HTTPS (must be in same region as ALB)
+    
+  DomainName:
+    Type: String
+    Default: api.blackjack21.site
+    Description: Domain name for the API
+
+  MinSize:
+    Type: Number
+    Default: 1
+    Description: Minimum number of EC2 instances
+    
+  MaxSize:
+    Type: Number
+    Default: 3
+    Description: Maximum number of EC2 instances
+    
+  DesiredCapacity:
+    Type: Number
+    Default: 1
+    Description: Desired number of EC2 instances
+
+Resources:
+  # IAM Role for EC2 instances
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: Blackjack21-EC2-Role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore  # For Systems Manager
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy    # For CloudWatch
+      Tags:
+        - Key: Name
+          Value: Blackjack21-EC2-Role
+        - Key: Project
+          Value: Blackjack21
+
+  # Instance Profile
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: Blackjack21-EC2-Profile
+      Roles:
+        - !Ref EC2Role
+
+  # Launch Template
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: Blackjack21-Backend-Template
+      LaunchTemplateData:
+        ImageId: !Ref LatestAmiId
+        InstanceType: !Ref InstanceType
+        KeyName: !Ref KeyPairName
+        IamInstanceProfile:
+          Arn: !GetAtt EC2InstanceProfile.Arn
+        SecurityGroupIds:
+          - Fn::ImportValue: !Sub '${NetworkStackName}-BackendSecurityGroup'
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            # Update system
+            yum update -y
+            
+            # Install Node.js 20
+            curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+            yum install -y nodejs
+            
+            # Install Git
+            yum install -y git
+            
+            # Install PM2 globally
+            npm install -g pm2
+            
+            # Create app directory
+            mkdir -p /home/ec2-user/blackjack21cit481
+            cd /home/ec2-user/blackjack21cit481
+            
+            # Clone repository (replace with your repo)
+            git clone https://github.com/luisacosta204/blackjack21cit481.git .
+            
+            # Install backend dependencies
+            cd server
+            npm ci --production
+            
+            # Build backend
+            npm run build
+            
+            # Create .env file with database connection
+            cat > .env << EOF
+            DATABASE_URL=postgresql://blackjack:PASSWORD@${DBEndpoint}:5432/blackjack480
+            PORT=3000
+            NODE_ENV=production
+            EOF
+            
+            # Start application with PM2
+            pm2 start dist/index.js --name blackjack-backend
+            pm2 save
+            pm2 startup systemd -u ec2-user --hp /home/ec2-user
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: Blackjack21-Backend
+              - Key: Project
+                Value: Blackjack21
+          - ResourceType: volume
+            Tags:
+              - Key: Name
+                Value: Blackjack21-Backend-Volume
+              - Key: Project
+                Value: Blackjack21
+
+  # Application Load Balancer
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: blackjack21-alb
+      Type: application
+      Scheme: internet-facing
+      IpAddressType: ipv4
+      Subnets:
+        - Fn::ImportValue: !Sub '${NetworkStackName}-PublicSubnet1'
+        - Fn::ImportValue: !Sub '${NetworkStackName}-PublicSubnet2'
+      SecurityGroups:
+        - Fn::ImportValue: !Sub '${NetworkStackName}-ALBSecurityGroup'
+      Tags:
+        - Key: Name
+          Value: Blackjack21-ALB
+        - Key: Project
+          Value: Blackjack21
+
+  # Target Group
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: blackjack21-tg
+      Port: 3000
+      Protocol: HTTP
+      VpcId:
+        Fn::ImportValue: !Sub '${NetworkStackName}-VPC'
+      HealthCheckEnabled: true
+      HealthCheckPath: /health
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      TargetType: instance
+      Tags:
+        - Key: Name
+          Value: Blackjack21-Target-Group
+        - Key: Project
+          Value: Blackjack21
+
+  # HTTPS Listener
+  HTTPSListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref CertificateArn
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  # HTTP Listener (redirects to HTTPS)
+  HTTPListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            Protocol: HTTPS
+            Port: '443'
+            StatusCode: HTTP_301
+
+  # Auto Scaling Group
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: blackjack21-asg
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: !Ref MinSize
+      MaxSize: !Ref MaxSize
+      DesiredCapacity: !Ref DesiredCapacity
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Sub '${NetworkStackName}-PublicSubnet1'
+        - Fn::ImportValue: !Sub '${NetworkStackName}-PublicSubnet2'
+      TargetGroupARNs:
+        - !Ref TargetGroup
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 300
+      Tags:
+        - Key: Name
+          Value: Blackjack21-ASG-Instance
+          PropagateAtLaunch: true
+        - Key: Project
+          Value: Blackjack21
+          PropagateAtLaunch: true
+
+  # Auto Scaling Policy - Scale Up
+  ScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 70.0  # Scale up when CPU > 70%
+
+Outputs:
+  LoadBalancerDNS:
+    Description: DNS name of the Application Load Balancer
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+    Export:
+      Name: !Sub '${AWS::StackName}-ALB-DNS'
+
+  LoadBalancerURL:
+    Description: Full URL to access the API
+    Value: !Sub 'https://${DomainName}'
+
+  TargetGroupArn:
+    Description: ARN of the Target Group
+    Value: !Ref TargetGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-TargetGroup'
+
+  AutoScalingGroupName:
+    Description: Name of the Auto Scaling Group
+    Value: !Ref AutoScalingGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-ASG'

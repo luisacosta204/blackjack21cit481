@@ -1,0 +1,148 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for Blackjack21 RDS PostgreSQL database'
+
+Parameters:
+  NetworkStackName:
+    Type: String
+    Default: blackjack21-vpc
+    Description: Name of the VPC stack to import values from
+    
+  DBInstanceClass:
+    Type: String
+    Default: db.t3.micro
+    Description: RDS instance type
+    AllowedValues:
+      - db.t3.micro
+      - db.t3.small
+      - db.t3.medium
+    
+  DBName:
+    Type: String
+    Default: blackjack480
+    Description: Name of the PostgreSQL database
+    
+  DBUsername:
+    Type: String
+    Default: blackjack
+    Description: Master username for the database
+    NoEcho: false
+    
+  DBPassword:
+    Type: String
+    NoEcho: true
+    Description: Master password for the database (min 8 characters)
+    MinLength: 8
+    
+  AllocatedStorage:
+    Type: Number
+    Default: 20
+    Description: Storage size in GB
+    MinValue: 20
+    MaxValue: 100
+
+Resources:
+  # DB Subnet Group (requires subnets in at least 2 AZs)
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: blackjack21-db-subnet-group
+      DBSubnetGroupDescription: Subnet group for Blackjack21 RDS
+      SubnetIds:
+        - Fn::ImportValue: !Sub '${NetworkStackName}-PrivateSubnet1'
+        - Fn::ImportValue: !Sub '${NetworkStackName}-PrivateSubnet2'
+      Tags:
+        - Key: Name
+          Value: Blackjack21-DB-Subnet-Group
+        - Key: Project
+          Value: Blackjack21
+
+  # DB Parameter Group
+  DBParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Family: postgres17
+      Description: Custom parameter group for Blackjack21
+      Parameters:
+        max_connections: '100'
+        shared_buffers: '{DBInstanceClassMemory/32768}'
+      Tags:
+        - Key: Name
+          Value: Blackjack21-DB-Parameters
+        - Key: Project
+          Value: Blackjack21
+
+  # RDS PostgreSQL Instance
+  Database:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot  # Create snapshot before deletion
+    Properties:
+      DBInstanceIdentifier: blackjack-db
+      Engine: postgres
+      EngineVersion: '17.6'  # Match your current version
+      DBInstanceClass: !Ref DBInstanceClass
+      AllocatedStorage: !Ref AllocatedStorage
+      StorageType: gp2  # Match your current storage type
+      StorageEncrypted: true
+      
+      DBName: !Ref DBName
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - Fn::ImportValue: !Sub '${NetworkStackName}-RDSSecurityGroup'
+      
+      DBParameterGroupName: !Ref DBParameterGroup
+      
+      # Backup configuration
+      BackupRetentionPeriod: 7  # Keep backups for 7 days
+      PreferredBackupWindow: '03:00-04:00'  # 3-4 AM UTC
+      PreferredMaintenanceWindow: 'sun:04:00-sun:05:00'  # Sunday 4-5 AM UTC
+      
+      # Multi-AZ for high availability (disable for free tier)
+      MultiAZ: false
+      
+      # Public accessibility
+      PubliclyAccessible: false
+      
+      # Performance Insights (disable for free tier)
+      EnablePerformanceInsights: false
+      
+      # Enable automated backups
+      CopyTagsToSnapshot: true
+      DeletionProtection: true  # IMPORTANT: Prevents accidental deletion
+      
+      Tags:
+        - Key: Name
+          Value: Blackjack21-Database
+        - Key: Project
+          Value: Blackjack21
+        - Key: Environment
+          Value: Production
+
+Outputs:
+  DBInstanceId:
+    Description: RDS Instance ID
+    Value: !Ref Database
+    Export:
+      Name: !Sub '${AWS::StackName}-DBInstanceId'
+
+  DBEndpoint:
+    Description: Database endpoint address
+    Value: !GetAtt Database.Endpoint.Address
+    Export:
+      Name: !Sub '${AWS::StackName}-DBEndpoint'
+
+  DBPort:
+    Description: Database port
+    Value: !GetAtt Database.Endpoint.Port
+    Export:
+      Name: !Sub '${AWS::StackName}-DBPort'
+
+  DBName:
+    Description: Database name
+    Value: !Ref DBName
+
+  ConnectionString:
+    Description: PostgreSQL connection string (without password)
+    Value: !Sub 'postgresql://${DBUsername}@${Database.Endpoint.Address}:${Database.Endpoint.Port}/${DBName}'
