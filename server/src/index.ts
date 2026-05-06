@@ -42,8 +42,8 @@ app.post("/auth/register", async (req, res) => {
     const password_hash = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
-      `insert into public.users (username, email, password_hash)
-       values ($1, $2, $3)
+      `insert into public.users (username, email, password_hash, last_daily_bonus)
+       values ($1, $2, $3, NOW() - INTERVAL '25 hours')
        returning id, username, email, credits, created_at`,
       [username, email, password_hash]
     );

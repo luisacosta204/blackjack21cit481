@@ -156,7 +156,7 @@ function DailyBonusButton() {
 export default function HomePage() {
   const navigate = useNavigate();
   const { user, loading } = useMe();
-  const { avatarSrc } = useAvatar("/assets/avatars/1.png");
+  const { avatarSrc } = useAvatar("/assets/avatars/robot.png");
 
   const username = useMemo(
     () => user?.username ?? getOrCreateGuestUsername(),
