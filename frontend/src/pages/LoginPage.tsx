@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config";
 import { updateCredits } from "../api/credits";
+import { checkDailyBonusStatus, claimDailyBonus } from "../api/dailyBonus";
 import "./LoginPage.css";
 
 export default function LoginPage() {
@@ -20,6 +21,33 @@ export default function LoginPage() {
     const stored = localStorage.getItem(BANK_KEY);
     return stored ? parseInt(stored, 10) : START_BANK;
   }
+
+  // MOVED ABOVE useEffect to fix declaration order
+  const checkAndClaimDailyBonus = async () => {
+    try {
+      const status = await checkDailyBonusStatus();
+      if (status.available) {
+        const result = await claimDailyBonus();
+        if (result.ok && result.bonusAmount) {
+          // Update localStorage bank
+          const currentBank = Number(localStorage.getItem(BANK_KEY) || 500);
+          localStorage.setItem(BANK_KEY, String(currentBank + result.bonusAmount));
+          
+          // Show notification (you can customize this)
+          alert(`🎁 Daily Bonus Claimed! +${result.bonusAmount} credits!`);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to check daily bonus:", error);
+    }
+  };
+
+  // Check for daily bonus on component mount (if already logged in)
+  useEffect(() => {
+    if (localStorage.getItem("token")) {
+      checkAndClaimDailyBonus();
+    }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -56,13 +84,22 @@ export default function LoginPage() {
 
         localStorage.setItem("token", data.token);
 
-        const bankValue = loadBank();
-        updateCredits(bankValue).catch((err) => {
-          console.error("Failed to sync credits on login", err);
-        });
+        // Sync credits from database if available
+        if (data.user?.credits !== undefined) {
+          localStorage.setItem(BANK_KEY, String(data.user.credits));
+        } else {
+          const bankValue = loadBank();
+          updateCredits(bankValue).catch((err) => {
+            console.error("Failed to sync credits on login", err);
+          });
+        }
+
+        // Check and claim daily bonus after successful login
+        setTimeout(() => checkAndClaimDailyBonus(), 500);
 
         navigate("/home");
       } else {
+        // REGISTER MODE
         const username = formData.get("username")?.toString().trim();
         const email = formData.get("email")?.toString().trim();
         const password = formData.get("password")?.toString();
@@ -86,6 +123,10 @@ export default function LoginPage() {
           return;
         }
 
+        // CRITICAL FIX: Clear localStorage before creating new account
+        // This prevents the 503 chip bug from old accounts
+        localStorage.clear();
+
         const res = await fetch(`${API_BASE_URL}/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -102,8 +143,11 @@ export default function LoginPage() {
 
         localStorage.setItem("token", data.token);
 
-        const bankValue = loadBank();
-        updateCredits(bankValue).catch((err) => {
+        // Set initial bank to 500 for new accounts
+        localStorage.setItem(BANK_KEY, String(START_BANK));
+        
+        // Sync with database
+        updateCredits(START_BANK).catch((err) => {
           console.error("Failed to sync credits on registration:", err);
         });
 
@@ -154,8 +198,8 @@ export default function LoginPage() {
 
             <p className="login-subtitle">
               {mode === "login"
-                ? "Sign in to your Blackjack 21 account to continue."
-                : "Create your Blackjack 21 account."}
+                ? "Sign in to claim your daily 200 chip bonus!"
+                : "Start with 500 chips and claim your daily 200 bonus!"}
             </p>
 
             {error && (

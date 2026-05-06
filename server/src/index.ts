@@ -498,7 +498,7 @@ app.get("/stats/user", async (req, res) => {
     const result = await pool.query(`
       SELECT 
         gt.name as game_type,
-        gt.name as game_name,
+        gt.display_name as game_name,
         COUNT(gr.id)::int as total_games,
         SUM(CASE WHEN gr.won THEN 1 ELSE 0 END)::int as wins,
         SUM(CASE WHEN gr.won THEN 0 ELSE 1 END)::int as losses,
@@ -525,7 +525,118 @@ app.get("/stats/user", async (req, res) => {
     res.status(500).json({ ok: false, error: "Server error" });
   }
 });
- 
+
+// ============================================================================
+// NEW: DAILY BONUS ENDPOINTS
+// ============================================================================
+
+// POST /daily-bonus - Claim daily 200 credits bonus (once per 24 hours)
+app.post("/daily-bonus", async (req, res) => {
+  try {
+    const auth = req.headers.authorization || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (!token) return res.status(401).json({ ok: false, error: "Missing token" });
+
+    const jwtUser = verifyToken(token);
+
+    // Get user's current credits and last bonus claim time
+    const userResult = await pool.query(
+      "SELECT credits, last_daily_bonus FROM users WHERE id = $1",
+      [jwtUser.id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ ok: false, error: "User not found" });
+    }
+
+    const { credits, last_daily_bonus } = userResult.rows[0];
+
+    // Check if 24 hours have passed since last claim
+    const now = new Date();
+    const lastBonus = last_daily_bonus ? new Date(last_daily_bonus) : null;
+    
+    if (lastBonus) {
+      const hoursSinceLastBonus = (now.getTime() - lastBonus.getTime()) / (1000 * 60 * 60);
+      
+      if (hoursSinceLastBonus < 24) {
+        const hoursRemaining = Math.ceil(24 - hoursSinceLastBonus);
+        return res.json({
+          ok: false,
+          error: "Daily bonus already claimed",
+          hoursRemaining,
+          nextBonusAt: new Date(lastBonus.getTime() + 24 * 60 * 60 * 1000),
+        });
+      }
+    }
+
+    // Grant the bonus
+    const DAILY_BONUS = 200;
+    const newCredits = credits + DAILY_BONUS;
+
+    await pool.query(
+      "UPDATE users SET credits = $1, last_daily_bonus = NOW() WHERE id = $2",
+      [newCredits, jwtUser.id]
+    );
+
+    res.json({
+      ok: true,
+      bonusAmount: DAILY_BONUS,
+      newCredits,
+      message: "Daily bonus claimed! +200 credits",
+    });
+  } catch (error) {
+    console.error("Error claiming daily bonus:", error);
+    res.status(500).json({ ok: false, error: "Failed to claim daily bonus" });
+  }
+});
+
+// GET /daily-bonus/status - Check if daily bonus is available
+app.get("/daily-bonus/status", async (req, res) => {
+  try {
+    const auth = req.headers.authorization || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (!token) return res.status(401).json({ ok: false, error: "Missing token" });
+
+    const jwtUser = verifyToken(token);
+
+    const result = await pool.query(
+      "SELECT last_daily_bonus FROM users WHERE id = $1",
+      [jwtUser.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ ok: false, error: "User not found" });
+    }
+
+    const { last_daily_bonus } = result.rows[0];
+    const now = new Date();
+    const lastBonus = last_daily_bonus ? new Date(last_daily_bonus) : null;
+
+    if (!lastBonus) {
+      return res.json({
+        ok: true,
+        available: true,
+        message: "Daily bonus available!",
+      });
+    }
+
+    const hoursSinceLastBonus = (now.getTime() - lastBonus.getTime()) / (1000 * 60 * 60);
+    const available = hoursSinceLastBonus >= 24;
+    const hoursRemaining = available ? 0 : Math.ceil(24 - hoursSinceLastBonus);
+    const nextBonusAt = available ? null : new Date(lastBonus.getTime() + 24 * 60 * 60 * 1000);
+
+    res.json({
+      ok: true,
+      available,
+      hoursRemaining,
+      nextBonusAt,
+      lastClaimedAt: lastBonus,
+    });
+  } catch (error) {
+    console.error("Error checking daily bonus status:", error);
+    res.status(500).json({ ok: false, error: "Failed to check bonus status" });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

@@ -8,7 +8,7 @@ import { useAvatar } from "../hooks/useAvatar";
 import { useMe } from "../hooks/useMe";
 import { getOrCreateGuestUsername } from "../utils/guest";
 import CenteredMain from "../components/CenteredMain";
-import { getProfileOverview, resetProfileStats, type GameKey } from "../utils/profileStats";
+import { getProfileOverview, resetProfileStats } from "../utils/profileStats";
 import { fetchUserStats, type GameStats } from "../api/userStats";
 import { chipUrlForBank } from "../utils/chips";
 import "./ProfilePage.css";
@@ -25,11 +25,18 @@ const AVATAR_OPTIONS = [
 const START_BANK = 500;
 const BANK_KEY = "bjBank";
 
-const GAME_ROUTE: Record<GameKey, string> = {
+const GAME_ROUTE: Record<string, string> = {
   blackjack: "/blackjack",
   slots: "/slots",
   craps: "/craps",
   roulette: "/roulette",
+};
+
+const GAME_EMOJI: Record<string, string> = {
+  blackjack: "🃏",
+  slots: "🎰",
+  roulette: "🎡",
+  craps: "🎲",
 };
 
 export default function ProfilePage() {
@@ -77,6 +84,30 @@ export default function ProfilePage() {
 
     loadStats();
   }, [user]);
+
+  // Calculate favorite game from database stats
+  const favoriteGame = useMemo(() => {
+    if (!user || dbStats.length === 0) {
+      return null;
+    }
+
+    // Find the game with the most total_games
+    const gamesWithPlays = dbStats.filter(s => s.total_games > 0);
+    if (gamesWithPlays.length === 0) return null;
+
+    const favorite = gamesWithPlays.reduce((prev, current) => 
+      current.total_games > prev.total_games ? current : prev
+    );
+
+    return {
+      name: favorite.game_name,
+      gameType: favorite.game_type,
+      totalGames: favorite.total_games,
+      wins: favorite.wins,
+      losses: favorite.losses,
+      winRate: favorite.win_rate,
+    };
+  }, [user, dbStats]);
 
   const onLogout = () => {
     localStorage.removeItem("token");
@@ -126,13 +157,6 @@ export default function ProfilePage() {
     } finally {
       setSavingEmail(false);
     }
-  };
-
-  const gameEmoji: Record<string, string> = {
-    blackjack: "🃏",
-    slots: "🎰",
-    roulette: "🎡",
-    craps: "🎲",
   };
 
   return (
@@ -197,13 +221,51 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Changed from cols-3 to cols-2 since we removed Overview */}
           <div className="grid cols-2 profile-grid">
             <div className="panel profile-card">
               <h3 className="panel-header">Favorite Game</h3>
               <p className="panel-subtle">Your most played game right now.</p>
 
-              {overview.favorite ? (
+              {/* Show database-based favorite for logged-in users */}
+              {user && favoriteGame ? (
+                <div className="stack profile-favorite-stack">
+                  <div className="profile-favorite-top">
+                    <div className="profile-favorite-title">
+                      <span style={{ marginRight: "8px" }}>
+                        {GAME_EMOJI[favoriteGame.gameType] || "🎮"}
+                      </span>
+                      {favoriteGame.name}
+                    </div>
+                    <div className="panel-subtle profile-favorite-caption">
+                      {favoriteGame.totalGames} total games played
+                    </div>
+                  </div>
+
+                  <div className="profile-favorite-stats">
+                    <div className="panel profile-mini-stat">
+                      <div className="panel-subtle profile-mini-label">Wins</div>
+                      <strong>{favoriteGame.wins}</strong>
+                    </div>
+                    <div className="panel profile-mini-stat">
+                      <div className="panel-subtle profile-mini-label">Losses</div>
+                      <strong>{favoriteGame.losses}</strong>
+                    </div>
+                    <div className="panel profile-mini-stat">
+                      <div className="panel-subtle profile-mini-label">Win Rate</div>
+                      <strong>{favoriteGame.winRate}%</strong>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Link to={GAME_ROUTE[favoriteGame.gameType]} className="btn btn-ghost">
+                      Play {favoriteGame.name}
+                    </Link>
+                  </div>
+                </div>
+              ) : user && statsLoading ? (
+                <p style={{ marginTop: "16px" }}>Loading...</p>
+              ) : !user && overview.favorite ? (
+                /* Show localStorage-based favorite for guest users */
                 <div className="stack profile-favorite-stack">
                   <div className="profile-favorite-top">
                     <div className="profile-favorite-title">{overview.favorite.label}</div>
@@ -314,7 +376,7 @@ export default function ProfilePage() {
                         <tr key={stat.game_type}>
                           <td>
                             <span style={{ marginRight: "8px" }}>
-                              {gameEmoji[stat.game_type] || "🎮"}
+                              {GAME_EMOJI[stat.game_type] || "🎮"}
                             </span>
                             {stat.game_name}
                           </td>
