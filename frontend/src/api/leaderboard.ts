@@ -2,14 +2,21 @@ import { API_BASE_URL } from "../config";
 
 export interface LeaderboardEntry {
   username: string;
+  game_type?: string; // NEW: Only present for game-specific leaderboards
   total_games: number;
   wins: number;
   losses: number;
   net_winnings: number;
 }
 
-export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
-  const res = await fetch(`${API_BASE_URL}/leaderboard`);
+export async function fetchLeaderboard(gameType?: string): Promise<LeaderboardEntry[]> {
+  // If no gameType specified, fetch overall leaderboard
+  // If gameType is specified, fetch game-specific leaderboard
+  const endpoint = gameType 
+    ? `${API_BASE_URL}/leaderboard/${gameType}`
+    : `${API_BASE_URL}/leaderboard`;
+
+  const res = await fetch(endpoint);
 
   if (!res.ok) {
     throw new Error("Failed to fetch leaderboard");

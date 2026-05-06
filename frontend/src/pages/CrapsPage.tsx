@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import HeaderUserNav from "../components/HeaderUserNav";
 import { useAvatar } from "../hooks/useAvatar";
@@ -7,6 +7,7 @@ import { getOrCreateGuestUsername } from "../utils/guest";
 import { updateCredits } from "../api/credits";
 import { recordProfileGameResult } from "../utils/profileStats";
 import { recordGameResult } from "../api/gameResults";
+import { startSession, endSession } from "../api/sessions";
 import { chipUrlForBank, chipUrlForTableTotal } from "../utils/chips";
 import "./craps/craps.css";
 import "../styles/bank-chip.css";
@@ -116,6 +117,10 @@ export default function CrapsPage() {
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
   const username = useMemo(() => user?.username ?? getOrCreateGuestUsername(), [user]);
 
+  // ── Session tracking ──────────────────────────────────────────────────────
+  const sessionIdRef = useRef<number | null>(null);
+  const recordingRef = useRef(false);
+
   const [bank, setBank] = useState<number>(() => loadBank());
   const [phase, setPhase] = useState<Phase>("comeout");
   const [point, setPoint] = useState<number | null>(null);
@@ -133,6 +138,31 @@ export default function CrapsPage() {
   useEffect(() => {
     saveBank(bank);
   }, [bank]);
+
+  // ── Session tracking - start session on mount, end on unmount ─────────────
+  useEffect(() => {
+    const initSession = async () => {
+      try {
+        const result = await startSession({ game_type: 'craps' });
+        if (result) {
+          sessionIdRef.current = result.session_id;
+          console.log('Session started:', result.session_id);
+        }
+      } catch (err) {
+        console.error('Failed to start session:', err);
+      }
+    };
+
+    initSession();
+
+    return () => {
+      if (sessionIdRef.current) {
+        endSession({ session_id: sessionIdRef.current }).catch((err) => {
+          console.error('Failed to end session:', err);
+        });
+      }
+    };
+  }, []);
 
   const syncBackendCredits = async (nextBank: number) => {
     if (!user) return;
@@ -193,6 +223,13 @@ export default function CrapsPage() {
   };
 
   const applyPayouts = async (resolution: RollResolution): Promise<void> => {
+    // Prevent double-recording
+    if (recordingRef.current) {
+      console.warn("Double-call prevented!");
+      return;
+    }
+    recordingRef.current = true;
+
     let delta = 0;
     const lines: string[] = [];
     const nextBets: Bets = { ...bets };
@@ -284,20 +321,26 @@ export default function CrapsPage() {
     setPayoutLine(lines.length ? `${delta >= 0 ? "+" : ""}${delta}` : "—");
     setStatus(`${resolution.events.join(" ")} ${lines.join(" • ")}`.trim() || "No payouts.");
 
+    // Record game result
     if (delta !== 0) {
-      recordProfileGameResult("craps", delta > 0);
-    }
+      const won = delta > 0;
 
-    if (user) {
-      try {
-        await updateCredits(nextBank);
-        if (delta !== 0) {
-          await recordGameResult({ won: delta > 0, delta });
+      if (user) {
+        // Logged-in users: record to database only
+        try {
+          await updateCredits(nextBank);
+          await recordGameResult({ won, delta, game_type: 'craps' });
+        } catch (error) {
+          console.error("Failed to persist craps result:", error);
         }
-      } catch (error) {
-        console.error("Failed to persist craps result:", error);
+      } else {
+        // Guest users: record to localStorage only
+        recordProfileGameResult("craps", won);
       }
     }
+
+    // Reset recording flag for next roll
+    recordingRef.current = false;
   };
 
   const roll = async () => {
@@ -309,6 +352,7 @@ export default function CrapsPage() {
 
     setRolling(true);
     setPayoutLine("—");
+    recordingRef.current = false; // Reset at start of roll
 
     for (let i = 0; i < 10; i += 1) {
       setDieA(rand1to6());

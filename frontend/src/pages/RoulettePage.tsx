@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import HeaderUserNav from "../components/HeaderUserNav";
 import { useAvatar } from "../hooks/useAvatar";
@@ -7,6 +7,7 @@ import { getOrCreateGuestUsername } from "../utils/guest";
 import { updateCredits } from "../api/credits";
 import { recordProfileGameResult } from "../utils/profileStats";
 import { recordGameResult } from "../api/gameResults";
+import { startSession, endSession } from "../api/sessions";
 import { chipUrlForBank } from "../utils/chips";
 import "./Roulette/roulette.css";
 import "../styles/bank-chip.css";
@@ -77,6 +78,10 @@ export default function RoulettePage() {
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
   const username = useMemo(() => user?.username ?? getOrCreateGuestUsername(), [user]);
 
+  // ── Session tracking ──────────────────────────────────────────────────────
+  const sessionIdRef = useRef<number | null>(null);
+  const recordingRef = useRef(false);
+
   const [bank, setBank] = useState<number>(() => loadBank());
   const [betAmount, setBetAmount] = useState(0);
   const [bet, setBet] = useState<BetState>({ type: null, value: null });
@@ -90,6 +95,31 @@ export default function RoulettePage() {
   useEffect(() => {
     saveBank(bank);
   }, [bank]);
+
+  // ── Session tracking - start session on mount, end on unmount ─────────────
+  useEffect(() => {
+    const initSession = async () => {
+      try {
+        const result = await startSession({ game_type: 'roulette' });
+        if (result) {
+          sessionIdRef.current = result.session_id;
+          console.log('Session started:', result.session_id);
+        }
+      } catch (err) {
+        console.error('Failed to start session:', err);
+      }
+    };
+
+    initSession();
+
+    return () => {
+      if (sessionIdRef.current) {
+        endSession({ session_id: sessionIdRef.current }).catch((err) => {
+          console.error('Failed to end session:', err);
+        });
+      }
+    };
+  }, []);
 
   const syncBackendCredits = async (nextBank: number) => {
     if (!user) return;
@@ -164,9 +194,17 @@ export default function RoulettePage() {
       return;
     }
 
+    // Prevent double-recording
+    if (recordingRef.current) {
+      console.warn("Double-call prevented!");
+      return;
+    }
+    recordingRef.current = true;
+
     const effectiveBet = bet.type === "number" ? { type: "number" as const, value: selectedNumber } : bet;
     if (betAmount > bank) {
       setStatus("Not enough chips.");
+      recordingRef.current = false;
       return;
     }
 
@@ -189,16 +227,23 @@ export default function RoulettePage() {
     setBank(nextBank);
     setSpinning(false);
     setStatus(didWin ? `You won! Payout x${mult}: +${winnings} chips.` : "No win this spin.");
-    recordProfileGameResult("roulette", didWin);
 
+    // Record game result
     if (user) {
+      // Logged-in users: record to database only
       try {
         await updateCredits(nextBank);
-        await recordGameResult({ won: didWin, delta: didWin ? winnings - betAmount : -betAmount });
+        await recordGameResult({ won: didWin, delta: didWin ? winnings - betAmount : -betAmount, game_type: 'roulette' });
       } catch (error) {
         console.error("Failed to persist roulette result:", error);
       }
+    } else {
+      // Guest users: record to localStorage only
+      recordProfileGameResult("roulette", didWin);
     }
+
+    // Reset recording flag for next spin
+    recordingRef.current = false;
   };
 
   const resultColor = resultNumber == null ? undefined : colorOf(resultNumber);

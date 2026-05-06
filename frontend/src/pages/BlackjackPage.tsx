@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 
 import HeaderUserNav from "../components/HeaderUserNav";
 import { useAvatar } from "../hooks/useAvatar";
@@ -18,6 +18,7 @@ import { recordGameResult } from "../api/gameResults";
 import { updateCredits } from "../api/credits";
 import { recordProfileGameResult } from "../utils/profileStats";
 import { chipUrlForBank } from "../utils/chips";
+import { startSession, endSession } from "../api/sessions";
 
 // ── Bank constants ────────────────────────────────────────────────────────────
 const BANK_KEY = "bjBank";
@@ -42,6 +43,10 @@ export default function BlackjackPage() {
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
 
   const username = user?.username ?? getOrCreateGuestUsername();
+
+  // ── Prevent double-recording ──────────────────────────────────────────────
+  const recordingRef = useRef(false);
+  const sessionIdRef = useRef<number | null>(null);
 
   // ── Deck theme ────────────────────────────────────────────────────────────
   const { textures, backImage, deckId, setDeckId, deckOptions, loading: deckLoading } =
@@ -97,6 +102,31 @@ export default function BlackjackPage() {
   const canStand = inRound && !roundOver;
   const bettingDisabled = inRound;
 
+  // ── Session tracking - start session on mount, end on unmount ─────────────
+  useEffect(() => {
+    const initSession = async () => {
+      try {
+        const result = await startSession({ game_type: 'blackjack' });
+        if (result) {
+          sessionIdRef.current = result.session_id;
+          console.log('Session started:', result.session_id);
+        }
+      } catch (err) {
+        console.error('Failed to start session:', err);
+      }
+    };
+
+    initSession();
+
+    return () => {
+      if (sessionIdRef.current) {
+        endSession({ session_id: sessionIdRef.current }).catch((err) => {
+          console.error('Failed to end session:', err);
+        });
+      }
+    };
+  }, []);
+
   // ── Chip handlers ─────────────────────────────────────────────────────────
   const addChip = (amount: number) => {
     if (bettingDisabled) return;
@@ -134,6 +164,7 @@ export default function BlackjackPage() {
     setStatusText("Place your bet to begin.");
     setInRound(false);
     setRoundOver(false);
+    recordingRef.current = false; // Reset the recording flag
   };
 
   // ── finishRound — applies payout ──────────────────────────────────────────
@@ -157,38 +188,45 @@ export default function BlackjackPage() {
       setHiddenDealerCount(0);
     }
 
-    //Apply payout
-    setBank((prev) => {
-      let delta = 0;
-      if (outcome === "win")       delta = betPerHand;
-      if (outcome === "blackjack") delta = Math.floor(betPerHand * 1.5);
-      if (outcome === "lose")      delta = -betPerHand;
-      // push: delta = 0
-      
-      const next = prev + delta;
-      saveBank(next);
+    // Calculate payout
+    let delta = 0;
+    if (outcome === "win")       delta = betPerHand;
+    if (outcome === "blackjack") delta = Math.floor(betPerHand * 1.5);
+    if (outcome === "lose")      delta = -betPerHand;
+    // push: delta = 0
 
-      // Record result in DB (only for logged-in users)
-      const won = outcome === "win" || outcome === "blackjack";
-      if (outcome !== "push") {
+    const newBank = bank + delta;
+    setBank(newBank);
+    saveBank(newBank);
+
+    // Prevent double-recording with a ref flag
+    if (recordingRef.current) {
+      console.warn("Double-call prevented!");
+      return;
+    }
+    recordingRef.current = true;
+
+    // Record game result (only once!)
+    const won = outcome === "win" || outcome === "blackjack";
+
+    if (outcome !== "push") {
+      if (user) {
+        // Logged-in users: record to database only
+        recordGameResult({ won, delta, game_type: 'blackjack' }).catch((err) => {
+          console.error("Failed to record game result:", err);
+        });
+      } else {
+        // Guest users: record to localStorage only
         recordProfileGameResult("blackjack", won);
       }
+    }
 
-      if (user) {
-        // Record game result
-        recordGameResult({ won, delta }).catch((err) => {
-          console.error("Failed to record game result:", err);
-          //Don't block the UI - just log the error
-        });
-
-        // Update credits in database
-        updateCredits(next).catch((err) => {
-          console.error("Failed to update credits:", err);
-        });
-      }
-
-      return next;
-    });
+    // Always update credits in database for logged-in users
+    if (user) {
+      updateCredits(newBank).catch((err) => {
+        console.error("Failed to update credits:", err);
+      });
+    }
   };
 
   // ── Stand ─────────────────────────────────────────────────────────────────
@@ -255,6 +293,8 @@ export default function BlackjackPage() {
 
   // ── Deal ──────────────────────────────────────────────────────────────────
   const deal = () => {
+    recordingRef.current = false; // Reset at start of new round
+
     if (shoe.length < 20) {
       const newShoe = buildShoe(6);
       setShoe(newShoe);

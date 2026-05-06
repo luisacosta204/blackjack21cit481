@@ -9,6 +9,7 @@ import { useMe } from "../hooks/useMe";
 import { getOrCreateGuestUsername } from "../utils/guest";
 import CenteredMain from "../components/CenteredMain";
 import { getProfileOverview, resetProfileStats, type GameKey } from "../utils/profileStats";
+import { fetchUserStats, type GameStats } from "../api/userStats";
 import { chipUrlForBank } from "../utils/chips";
 import "./ProfilePage.css";
 
@@ -44,9 +45,38 @@ export default function ProfilePage() {
   const [savingEmail, setSavingEmail] = useState(false);
   const [resettingBank, setResettingBank] = useState(false);
 
+  // Database stats
+  const [dbStats, setDbStats] = useState<GameStats[]>([]);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
   useEffect(() => {
     setEmailValue(user?.email ?? "");
   }, [user?.email]);
+
+  // Fetch database stats for logged-in users
+  useEffect(() => {
+    if (!user) {
+      setStatsLoading(false);
+      return;
+    }
+
+    const loadStats = async () => {
+      try {
+        setStatsLoading(true);
+        setStatsError(null);
+        const stats = await fetchUserStats();
+        setDbStats(stats);
+      } catch (error) {
+        console.error("Failed to load stats:", error);
+        setStatsError("Failed to load game statistics");
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [user]);
 
   const onLogout = () => {
     localStorage.removeItem("token");
@@ -96,6 +126,13 @@ export default function ProfilePage() {
     } finally {
       setSavingEmail(false);
     }
+  };
+
+  const gameEmoji: Record<string, string> = {
+    blackjack: "🃏",
+    slots: "🎰",
+    roulette: "🎡",
+    craps: "🎲",
   };
 
   return (
@@ -160,41 +197,8 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="grid cols-3 profile-grid">
-            <div className="panel profile-card">
-              <h3 className="panel-header">Overview</h3>
-              <p className="panel-subtle">Wins and losses for all four games plus your total.</p>
-
-              <div className="table-wrapper profile-table-wrap">
-                <table className="table profile-table">
-                  <thead>
-                    <tr>
-                      <th>Game</th>
-                      <th>Wins</th>
-                      <th>Losses</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {overview.lines.map((line) => (
-                      <tr key={line.key}>
-                        <td>{line.label}</td>
-                        <td>{line.wins}</td>
-                        <td>{line.losses}</td>
-                        <td>{line.wins + line.losses}</td>
-                      </tr>
-                    ))}
-                    <tr className="profile-total-row">
-                      <td><strong>Total</strong></td>
-                      <td><strong>{overview.total.wins}</strong></td>
-                      <td><strong>{overview.total.losses}</strong></td>
-                      <td><strong>{overview.total.games}</strong></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
+          {/* Changed from cols-3 to cols-2 since we removed Overview */}
+          <div className="grid cols-2 profile-grid">
             <div className="panel profile-card">
               <h3 className="panel-header">Favorite Game</h3>
               <p className="panel-subtle">Your most played game right now.</p>
@@ -274,6 +278,116 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Database Stats Section - Only for logged-in users */}
+          {user && (
+            <div className="panel profile-card" style={{ marginTop: "24px" }}>
+              <h3 className="panel-header">📊 Game Statistics</h3>
+              <p className="panel-subtle">Detailed stats from your account history</p>
+
+              {statsLoading && <p style={{ marginTop: "16px" }}>Loading statistics...</p>}
+              {statsError && <p className="error" style={{ marginTop: "16px" }}>{statsError}</p>}
+
+              {!statsLoading && !statsError && dbStats.filter(s => s.total_games > 0).length === 0 && (
+                <div className="toast info" style={{ display: "block", marginTop: "16px" }}>
+                  No games played yet. Start playing to see your stats!
+                </div>
+              )}
+
+              {!statsLoading && !statsError && dbStats.filter(s => s.total_games > 0).length > 0 && (
+                <div className="table-wrapper" style={{ marginTop: "16px" }}>
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Game</th>
+                        <th>Total Games</th>
+                        <th>Wins</th>
+                        <th>Losses</th>
+                        <th>Win Rate</th>
+                        <th>Net Winnings</th>
+                        <th>Biggest Win</th>
+                        <th>Biggest Loss</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dbStats.filter(s => s.total_games > 0).map((stat) => (
+                        <tr key={stat.game_type}>
+                          <td>
+                            <span style={{ marginRight: "8px" }}>
+                              {gameEmoji[stat.game_type] || "🎮"}
+                            </span>
+                            {stat.game_name}
+                          </td>
+                          <td>{stat.total_games}</td>
+                          <td className="text-success">{stat.wins}</td>
+                          <td className="text-danger">{stat.losses}</td>
+                          <td>{stat.win_rate}%</td>
+                          <td>
+                            <strong className={stat.net_winnings >= 0 ? "text-success" : "text-danger"}>
+                              {stat.net_winnings >= 0 ? "+" : ""}
+                              {stat.net_winnings}
+                            </strong>
+                          </td>
+                          <td className="text-success">+{stat.biggest_win}</td>
+                          <td className="text-danger">{stat.biggest_loss}</td>
+                        </tr>
+                      ))}
+                      
+                      {/* Totals Row */}
+                      {dbStats.filter(s => s.total_games > 0).length > 1 && (
+                        <tr className="profile-total-row">
+                          <td><strong>Total</strong></td>
+                          <td>
+                            <strong>
+                              {dbStats.reduce((sum, s) => sum + s.total_games, 0)}
+                            </strong>
+                          </td>
+                          <td>
+                            <strong className="text-success">
+                              {dbStats.reduce((sum, s) => sum + s.wins, 0)}
+                            </strong>
+                          </td>
+                          <td>
+                            <strong className="text-danger">
+                              {dbStats.reduce((sum, s) => sum + s.losses, 0)}
+                            </strong>
+                          </td>
+                          <td>
+                            <strong>
+                              {(() => {
+                                const totalGames = dbStats.reduce((sum, s) => sum + s.total_games, 0);
+                                const totalWins = dbStats.reduce((sum, s) => sum + s.wins, 0);
+                                return totalGames > 0 
+                                  ? ((totalWins / totalGames) * 100).toFixed(1) + "%"
+                                  : "0.0%";
+                              })()}
+                            </strong>
+                          </td>
+                          <td>
+                            <strong className={
+                              dbStats.reduce((sum, s) => sum + s.net_winnings, 0) >= 0 
+                                ? "text-success" 
+                                : "text-danger"
+                            }>
+                              {dbStats.reduce((sum, s) => sum + s.net_winnings, 0) >= 0 ? "+" : ""}
+                              {dbStats.reduce((sum, s) => sum + s.net_winnings, 0)}
+                            </strong>
+                          </td>
+                          <td className="text-success">
+                            +{Math.max(...dbStats.map(s => s.biggest_win), 0)}
+                          </td>
+                          <td className="text-danger">
+                            {Math.min(...dbStats.map(s => s.biggest_loss), 0)}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
         </section>
         </div>
       </CenteredMain>

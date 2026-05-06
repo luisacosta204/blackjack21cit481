@@ -8,6 +8,8 @@ import { Link } from "react-router-dom";
 import { fetchLeaderboard, type LeaderboardEntry } from "../api/leaderboard";
 import { chipUrlForBank } from "../utils/chips";
 
+type GameTab = 'all' | 'blackjack' | 'slots' | 'roulette' | 'craps';
+
 export default function LeaderboardPage() {
   const { user } = useMe();
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
@@ -17,15 +19,17 @@ export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<GameTab>('all');
 
   useEffect(() => {
-    loadLeaderboard();
-  }, []);
+    loadLeaderboard(activeTab);
+  }, [activeTab]);
 
-  async function loadLeaderboard() {
+  async function loadLeaderboard(gameType?: string) {
     try {
       setLoading(true);
-      const data = await fetchLeaderboard();
+      setError(null);
+      const data = await fetchLeaderboard(gameType === 'all' ? undefined : gameType);
       setLeaderboard(data);
     } catch (err) {
       setError((err as Error)?.message || "Failed to load leaderboard");
@@ -33,6 +37,14 @@ export default function LeaderboardPage() {
       setLoading(false);
     }
   }
+
+  const tabs: Array<{ id: GameTab; label: string; emoji: string }> = [
+    { id: 'all', label: 'All Games', emoji: '🎰' },
+    { id: 'blackjack', label: 'Blackjack', emoji: '🃏' },
+    { id: 'slots', label: 'Slots', emoji: '🎰' },
+    { id: 'roulette', label: 'Roulette', emoji: '🎡' },
+    { id: 'craps', label: 'Craps', emoji: '🎲' },
+  ];
 
   return (
     <>
@@ -60,13 +72,37 @@ export default function LeaderboardPage() {
       <CenteredMain maxWidth={1200}>
         <section className="panel stack">
           <h2 className="panel-header">Leaderboard</h2>
-          <p className="panel-subtle">Top players by net winnings</p>
+          <p className="panel-subtle">
+            Top players by net winnings
+            {activeTab !== 'all' && ` • ${tabs.find(t => t.id === activeTab)?.label}`}
+          </p>
+
+          {/* Game Tabs */}
+          <div className="cluster" style={{ gap: '8px', marginBottom: '16px' }}>
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                className={activeTab === tab.id ? 'btn btn-secondary' : 'btn btn-ghost'}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  fontSize: '14px',
+                  padding: '8px 16px',
+                }}
+              >
+                <span style={{ marginRight: '6px' }}>{tab.emoji}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
           {loading && <p>Loading leaderboard...</p>}
           {error && <p className="error">{error}</p>}
 
           {!loading && !error && leaderboard.length === 0 && (
-            <p>No players yet. Be the first to play!</p>
+            <div className="toast info" style={{ display: 'block' }}>
+              No players yet for {activeTab === 'all' ? 'any game' : tabs.find(t => t.id === activeTab)?.label}. 
+              Be the first to play!
+            </div>
           )}
 
           {!loading && !error && leaderboard.length > 0 && (
@@ -84,7 +120,7 @@ export default function LeaderboardPage() {
                 </thead>
                 <tbody>
                   {leaderboard.map((entry, index) => (
-                    <tr key={entry.username}>
+                    <tr key={`${entry.username}-${index}`}>
                       <td>
                         <strong>#{index + 1}</strong>
                       </td>

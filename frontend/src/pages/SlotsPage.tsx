@@ -6,6 +6,7 @@ import { useAvatar } from "../hooks/useAvatar";
 import { getOrCreateGuestUsername } from "../utils/guest";
 import { updateCredits } from "../api/credits";
 import { recordGameResult } from "../api/gameResults";
+import { startSession, endSession } from "../api/sessions";
 import { recordProfileGameResult } from "../utils/profileStats";
 import { chipUrlForBank } from "../utils/chips";
 import "./Slots/slots.css";
@@ -66,6 +67,10 @@ export default function SlotsPage() {
   const { avatarSrc } = useAvatar("/assets/avatars/1.png");
   const username = user?.username ?? getOrCreateGuestUsername();
 
+  // ── Session tracking ──────────────────────────────────────────────────────
+  const sessionIdRef = useRef<number | null>(null);
+  const recordingRef = useRef(false);
+
   const [bank, setBank] = useState<number>(() => loadBank());
   const [bet, setBet] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -82,6 +87,31 @@ export default function SlotsPage() {
         if (id !== null) window.clearInterval(id);
       });
       timeoutRefs.current.forEach((id) => window.clearTimeout(id));
+    };
+  }, []);
+
+  // ── Session tracking - start session on mount, end on unmount ─────────────
+  useEffect(() => {
+    const initSession = async () => {
+      try {
+        const result = await startSession({ game_type: 'slots' });
+        if (result) {
+          sessionIdRef.current = result.session_id;
+          console.log('Session started:', result.session_id);
+        }
+      } catch (err) {
+        console.error('Failed to start session:', err);
+      }
+    };
+
+    initSession();
+
+    return () => {
+      if (sessionIdRef.current) {
+        endSession({ session_id: sessionIdRef.current }).catch((err) => {
+          console.error('Failed to end session:', err);
+        });
+      }
     };
   }, []);
 
@@ -121,25 +151,37 @@ export default function SlotsPage() {
   }
 
   async function finalizeSpin(results: [SymbolKey, SymbolKey, SymbolKey], bankAfterBet: number) {
+    // Prevent double-recording
+    if (recordingRef.current) {
+      console.warn("Double-call prevented!");
+      return;
+    }
+    recordingRef.current = true;
+
     const payout = evaluateWin(results, bet);
     const didWin = payout > 0;
     const finalBank = didWin ? bankAfterBet + payout : bankAfterBet;
 
     setBank(finalBank);
     saveBank(finalBank);
-    recordProfileGameResult("slots", didWin);
     setStatus(didWin ? `You won ${payout} credits!` : "No win. Try again!");
 
+    // Record game result
     if (user) {
+      // Logged-in users: record to database only
       try {
         await updateCredits(finalBank);
-        await recordGameResult({ won: didWin, delta: didWin ? payout - bet : -bet });
+        await recordGameResult({ won: didWin, delta: didWin ? payout - bet : -bet, game_type: 'slots' });
       } catch (err) {
         console.error("Failed to record slots result:", err);
       }
+    } else {
+      // Guest users: record to localStorage only
+      recordProfileGameResult("slots", didWin);
     }
 
     setSpinning(false);
+    recordingRef.current = false; // Reset for next spin
   }
 
   async function spin() {
@@ -152,6 +194,8 @@ export default function SlotsPage() {
       setStatus("Your bet exceeds your credits.");
       return;
     }
+
+    recordingRef.current = false; // Reset at start of spin
 
     intervalRefs.current.forEach((id) => {
       if (id !== null) window.clearInterval(id);
