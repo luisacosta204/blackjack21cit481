@@ -17,5 +17,5 @@ export interface Hand {
 export interface DeckState {
   shoe: Card[];
   discard: Card[];
-  decks: number; // number of 52-card decks in the shoe (e.g., 6)
+  decks: number; // number of 52-card decks in the shoe 
 }
