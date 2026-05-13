@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 type Props = {
   avatarSrc: string;
   username: string;
-  subtitle?: React.ReactNode; // ✅ ADD THIS
+  subtitle?: React.ReactNode; 
   right?: React.ReactNode;
 };
 
