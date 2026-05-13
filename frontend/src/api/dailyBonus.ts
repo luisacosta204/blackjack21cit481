@@ -1,5 +1,3 @@
-// Create this file: frontend/src/api/dailyBonus.ts
-
 import { API_BASE_URL } from "../config";
 
 export interface DailyBonusStatusResponse {
